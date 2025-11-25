@@ -24,7 +24,11 @@ class DeadlineService:
 
     async def list_for_user(self, user_id: int):
         async with Session() as session:
-            q = select(Deadline).where(not Deadline.notified)
+            q = (
+                select(Deadline)
+                .where(Deadline.user_id == user_id)
+                .order_by(Deadline.deadline_at)
+            )
             res = await session.execute(q)
             return res.scalars().all()
 

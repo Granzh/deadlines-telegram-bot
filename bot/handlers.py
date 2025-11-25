@@ -22,6 +22,23 @@ async def add_start(msg: Message, state: FSMContext):
     await state.set_state(AddDeadlineFSM.title)
 
 
+@router.message(F.text == "/list")
+async def list_deadlines(msg: Message):
+    deadlines = await service.list_for_user(msg.from_user.id)
+
+    if not deadlines:
+        await msg.answer("Нет дедлайнов!")
+        return
+
+    text_lines = ["Твои дедлайны:", " "]
+
+    for i, d in enumerate(deadlines, start=1):
+        status = "Горит" if d.notified else "Не горит"
+        text_lines.append(f"*{i}.* {status} *{d.title} \n{d.deadline_at}")
+
+    await msg.answer("\n".join(text_lines))
+
+
 @router.message(AddDeadlineFSM.title)
 async def add_title(msg: Message, state: FSMContext):
     await state.update_data(title=msg.text)
