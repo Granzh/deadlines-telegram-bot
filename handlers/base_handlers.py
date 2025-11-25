@@ -1,5 +1,6 @@
 import dateparser
-from aiogram import F, Router
+from aiogram import Router
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
@@ -11,18 +12,13 @@ router = Router()
 service = DeadlineService()
 
 
-@router.message(F.text == "/start")
-async def start(msg: Message):
-    await msg.answer("Welcome to the deadline bot!")
-
-
-@router.message(F.text == "/add")
+@router.message(Command("add"))
 async def add_start(msg: Message, state: FSMContext):
     await msg.answer("Enter the title of the deadline:")
     await state.set_state(AddDeadlineFSM.title)
 
 
-@router.message(F.text == "/list")
+@router.message(Command("list"))
 async def list_deadlines(msg: Message):
     deadlines = await service.list_for_user(msg.from_user.id)
 
@@ -51,7 +47,7 @@ async def add_datetime(msg: Message, state: FSMContext):
     dt = dateparser.parse(msg.text, settings={"PREFER_DATES_FROM": "future"})
 
     if not dt:
-        await msg.anser("Не понял дату(")
+        await msg.answer("Не понял дату(")
         return
 
     from datetime import timezone
