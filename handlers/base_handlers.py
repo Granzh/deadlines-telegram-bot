@@ -5,8 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from services.deadline_service import DeadlineService
-
-from fsm_add_deadline import AddDeadlineFSM
+from handlers.fsm_add_deadline import AddDeadlineFSM
 
 router = Router()
 service = DeadlineService()

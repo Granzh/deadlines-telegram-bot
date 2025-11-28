@@ -52,3 +52,26 @@ class DeadlineService:
             await session.delete(deadline)
             await session.commit()
             return True
+
+    async def get_by_id(self, deadline_id: int):
+        async with Session() as session:
+            q = select(Deadline).where(Deadline.id == deadline_id)
+            res = await session.execute(q)
+            return res.scalar_one_or_none()
+
+    async def update(self, deadline_id: int, title: str = None, dt: datetime = None):
+        async with Session() as session:
+            q = select(Deadline).where(Deadline.id == deadline_id)
+            res = await session.execute(q)
+            deadline = res.scalar_one_or_none()
+
+            if not deadline:
+                return False
+
+            if title is not None:
+                deadline.title = title
+            if dt is not None:
+                deadline.deadline_at = dt
+
+            await session.commit()
+            return True
