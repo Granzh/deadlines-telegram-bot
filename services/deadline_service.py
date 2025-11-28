@@ -41,6 +41,14 @@ class DeadlineService:
             await session.commit()
 
     async def delete(self, deadline_id: int):
-        async with Session as session:
-            await session.execute(Deadline.delete().where(Deadline.id == deadline_id))
+        async with Session() as session:
+            q = select(Deadline).where(Deadline.id == deadline_id)
+            res = await session.execute(q)
+            deadline = res.scalar_one_or_none()
+
+            if not deadline:
+                return False
+
+            await session.delete(deadline)
             await session.commit()
+            return True

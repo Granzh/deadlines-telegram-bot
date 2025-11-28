@@ -2,11 +2,11 @@ import dateparser
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from services.deadline_service import DeadlineService
 
-from .fsm_add_deadline import AddDeadlineFSM
+from fsm_add_deadline import AddDeadlineFSM
 
 router = Router()
 service = DeadlineService()
@@ -33,6 +33,28 @@ async def list_deadlines(msg: Message):
         text_lines.append(f"*{i}.* {status} *{d.title} \n{d.deadline_at}")
 
     await msg.answer("\n".join(text_lines))
+
+
+@router.message(Command("delete"))
+async def delete_deadline_command(msg: Message):
+    deadlines = await service.list_for_user(msg.from_user.id)
+
+    if not deadlines:
+        await msg.answer("Нет дедлайнов для удаления!")
+        return
+
+    text_lines = ["Выбери дедлайн для удаления:", " "]
+    buttons = []
+
+    for i, d in enumerate(deadlines, start=1):
+        status = "🔥" if d.notified else "⏰"
+        text_lines.append(f"{i}. {status} {d.title} - {d.deadline_at}")
+        buttons.append(
+            [InlineKeyboardButton(text=f"❌ {i}. {d.title}", callback_data=f"delete:{d.id}")]
+        )
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await msg.answer("\n".join(text_lines), reply_markup=keyboard)
 
 
 @router.message(AddDeadlineFSM.title)
