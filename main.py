@@ -26,6 +26,7 @@ async def main():
         BotCommand(command="edit", description="Редактировать дедлайн"),
         BotCommand(command="delete", description="Удалить дедлайн"),
         BotCommand(command="notifications", description="Настройки уведомлений"),
+        BotCommand(command="timezone", description="Настройки часового пояса"),
     ]
 
     dp.include_router(router)

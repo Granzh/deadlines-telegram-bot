@@ -15,9 +15,9 @@ async def check_deadlines():
     deadlines = await deadline_service.get_due()
     for deadline in deadlines:
         await bot.send_message(
-            deadline.user_id, f"🔥 Дедлайн *{deadline.title}* просрочен!\n\nСрок был: {deadline.deadline_at}"
+            deadline.user_id,
+            f"🔥 Дедлайн *{deadline.title}* просрочен!\n\nСрок был: {deadline.deadline_at}",
         )
-        await deadline_service.mark_notified(deadline.id)
 
 
 async def check_upcoming_deadlines():

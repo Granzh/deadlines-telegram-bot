@@ -1,9 +1,19 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(
+        Integer, unique=True, nullable=False, index=True
+    )
+    timezone: Mapped[str] = mapped_column(String, default="UTC", nullable=False)
 
 
 class Deadline(Base):
@@ -13,7 +23,9 @@ class Deadline(Base):
     user_id: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String)
     deadline_at: Mapped[datetime] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class NotificationSettings(Base):

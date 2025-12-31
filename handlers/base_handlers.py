@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 import dateparser
 from aiogram import Router
 from aiogram.filters import Command
@@ -19,6 +21,7 @@ async def add_start(msg: Message, state: FSMContext):
 
 @router.message(Command("list"))
 async def list_deadlines(msg: Message):
+    tz = await service.get_timezone_for_user(msg.from_user.id)
     deadlines = await service.list_for_user(msg.from_user.id)
 
     if not deadlines:
@@ -29,11 +32,26 @@ async def list_deadlines(msg: Message):
 
     for i, d in enumerate(deadlines, start=1):
         status = "Не горит"
+        local_dt = d.deadline_at.astimezone(tz)
         text_lines.append(
-            f"*{i}.* {status} *{d.title} \n{d.deadline_at.strftime('%d.%m.%Y %H:%M')}"
+            f"*{i}.* {status} *{d.title} \n{local_dt.strftime('%d.%m.%Y %H:%M')}"
         )
 
     await msg.answer("\n".join(text_lines))
+
+
+@router.message(Command("change_timezone"))
+async def change_timezone_command(msg: Message):
+    parts = msg.text.split()
+    if len(parts) != 2:
+        await msg.answer("Неверный формат команды!")
+        return
+
+    success = await service.edit_timezone(msg.from_user.id, parts[1].strip())
+    if success:
+        await msg.answer("Временная зона успешно изменена!")
+    else:
+        await msg.answer("Неверная временная зона!")
 
 
 @router.message(Command("delete"))
