@@ -2,10 +2,15 @@ import dateparser
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
-from services.deadline_service import DeadlineService
 from handlers.fsm_edit_deadline import EditDeadlineFSM
+from services.deadline_service import DeadlineService
 
 edit_deadline_router = Router()
 service = DeadlineService()
@@ -23,10 +28,14 @@ async def edit_deadline_command(msg: Message):
     buttons = []
 
     for i, d in enumerate(deadlines, start=1):
-        status = "🔥" if d.notified else "⏰"
+        status = "⏰"
         text_lines.append(f"{i}. {status} {d.title} - {d.deadline_at}")
         buttons.append(
-            [InlineKeyboardButton(text=f"✏️ {i}. {d.title}", callback_data=f"edit:{d.id}")]
+            [
+                InlineKeyboardButton(
+                    text=f"✏️ {i}. {d.title}", callback_data=f"edit:{d.id}"
+                )
+            ]
         )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -49,9 +58,17 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     await state.update_data(deadline_id=deadline_id)
 
     buttons = [
-        [InlineKeyboardButton(text="📝 Изменить название", callback_data="edit_field:title")],
-        [InlineKeyboardButton(text="📅 Изменить дату", callback_data="edit_field:datetime")],
-        [InlineKeyboardButton(text="❌ Отмена", callback_data="edit_field:cancel")]
+        [
+            InlineKeyboardButton(
+                text="📝 Изменить название", callback_data="edit_field:title"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text="📅 Изменить дату", callback_data="edit_field:datetime"
+            )
+        ],
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="edit_field:cancel")],
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -60,14 +77,14 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
             f"Что хочешь изменить в дедлайне?\n\n"
             f"*{deadline.title}*\n"
             f"Срок: {deadline.deadline_at}",
-            reply_markup=keyboard
+            reply_markup=keyboard,
         )
     except Exception:
         await callback.message.answer(
             f"Что хочешь изменить в дедлайне?\n\n"
             f"*{deadline.title}*\n"
             f"Срок: {deadline.deadline_at}",
-            reply_markup=keyboard
+            reply_markup=keyboard,
         )
 
     await callback.answer()
@@ -95,9 +112,13 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
         await state.set_state(EditDeadlineFSM.edit_title)
     elif field == "datetime":
         try:
-            await callback.message.edit_text("Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:")
+            await callback.message.edit_text(
+                "Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:"
+            )
         except Exception:
-            await callback.message.answer("Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:")
+            await callback.message.answer(
+                "Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:"
+            )
         await state.set_state(EditDeadlineFSM.edit_datetime)
 
     await callback.answer()
@@ -131,6 +152,7 @@ async def process_new_datetime(msg: Message, state: FSMContext):
         return
 
     from datetime import timezone
+
     dt = dt.replace(tzinfo=timezone.utc)
 
     data = await state.get_data()

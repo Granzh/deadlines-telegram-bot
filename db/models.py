@@ -14,7 +14,6 @@ class Deadline(Base):
     title: Mapped[str] = mapped_column(String)
     deadline_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    notified: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class NotificationSettings(Base):

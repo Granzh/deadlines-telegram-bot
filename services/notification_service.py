@@ -44,7 +44,6 @@ class NotificationService:
             return settings
 
     async def get_deadlines_for_notifications(self):
-        """Получить все дедлайны, требующие уведомления"""
         async with Session() as session:
             now = datetime.now()
 
@@ -54,7 +53,6 @@ class NotificationService:
 
             results = []
             for deadline in deadlines:
-                # Получаем настройки пользователя
                 settings_q = select(NotificationSettings).where(
                     NotificationSettings.user_id == deadline.user_id
                 )
@@ -66,36 +64,35 @@ class NotificationService:
 
                 time_until = deadline.deadline_at - now
 
-                # Проверяем какие уведомления нужно отправить
                 notifications_to_send = []
 
-                if settings.notify_1_week and timedelta(days=7) <= time_until < timedelta(
-                    days=7, minutes=2
-                ):
+                if settings.notify_1_week and timedelta(
+                    days=7
+                ) <= time_until < timedelta(days=7, minutes=2):
                     if not await self._was_sent(deadline.id, "1_week"):
                         notifications_to_send.append(("1_week", "За неделю"))
 
-                if settings.notify_3_days and timedelta(days=3) <= time_until < timedelta(
-                    days=3, minutes=2
-                ):
+                if settings.notify_3_days and timedelta(
+                    days=3
+                ) <= time_until < timedelta(days=3, minutes=2):
                     if not await self._was_sent(deadline.id, "3_days"):
                         notifications_to_send.append(("3_days", "За 3 дня"))
 
-                if settings.notify_1_day and timedelta(days=1) <= time_until < timedelta(
-                    days=1, minutes=2
-                ):
+                if settings.notify_1_day and timedelta(
+                    days=1
+                ) <= time_until < timedelta(days=1, minutes=2):
                     if not await self._was_sent(deadline.id, "1_day"):
                         notifications_to_send.append(("1_day", "За день"))
 
-                if settings.notify_3_hours and timedelta(hours=3) <= time_until < timedelta(
-                    hours=3, minutes=2
-                ):
+                if settings.notify_3_hours and timedelta(
+                    hours=3
+                ) <= time_until < timedelta(hours=3, minutes=2):
                     if not await self._was_sent(deadline.id, "3_hours"):
                         notifications_to_send.append(("3_hours", "За 3 часа"))
 
-                if settings.notify_1_hour and timedelta(hours=1) <= time_until < timedelta(
-                    hours=1, minutes=2
-                ):
+                if settings.notify_1_hour and timedelta(
+                    hours=1
+                ) <= time_until < timedelta(hours=1, minutes=2):
                     if not await self._was_sent(deadline.id, "1_hour"):
                         notifications_to_send.append(("1_hour", "За час"))
 

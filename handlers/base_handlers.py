@@ -4,8 +4,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from services.deadline_service import DeadlineService
 from handlers.fsm_add_deadline import AddDeadlineFSM
+from services.deadline_service import DeadlineService
 
 router = Router()
 service = DeadlineService()
@@ -28,8 +28,10 @@ async def list_deadlines(msg: Message):
     text_lines = ["Твои дедлайны:", " "]
 
     for i, d in enumerate(deadlines, start=1):
-        status = "Горит" if d.notified else "Не горит"
-        text_lines.append(f"*{i}.* {status} *{d.title} \n{d.deadline_at}")
+        status = "Не горит"
+        text_lines.append(
+            f"*{i}.* {status} *{d.title} \n{d.deadline_at.strftime('%d.%m.%Y %H:%M')}"
+        )
 
     await msg.answer("\n".join(text_lines))
 
@@ -46,10 +48,14 @@ async def delete_deadline_command(msg: Message):
     buttons = []
 
     for i, d in enumerate(deadlines, start=1):
-        status = "🔥" if d.notified else "⏰"
+        status = "⏰"
         text_lines.append(f"{i}. {status} {d.title} - {d.deadline_at}")
         buttons.append(
-            [InlineKeyboardButton(text=f"❌ {i}. {d.title}", callback_data=f"delete:{d.id}")]
+            [
+                InlineKeyboardButton(
+                    text=f"❌ {i}. {d.title}", callback_data=f"delete:{d.id}"
+                )
+            ]
         )
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
