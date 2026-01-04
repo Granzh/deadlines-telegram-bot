@@ -4,10 +4,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from config import BOT_TOKEN
 from services.deadline_service import DeadlineService
 from services.notification_service import NotificationService
+from db.session import Session
+
+assert BOT_TOKEN is not None
 
 bot = Bot(token=BOT_TOKEN)
-deadline_service = DeadlineService()
-notification_service = NotificationService()
+deadline_service = DeadlineService(Session)
+notification_service = NotificationService(Session)
 
 
 async def check_deadlines():

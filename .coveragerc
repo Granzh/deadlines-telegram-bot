@@ -1,0 +1,4 @@
+[run]
+omit =
+    utils/logging_config.py
+    */logging_config.py

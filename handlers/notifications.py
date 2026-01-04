@@ -1,11 +1,17 @@
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 from services.notification_service import NotificationService
+from db.session import Session
 
 notifications_router = Router()
-service = NotificationService()
+service = NotificationService(Session)
 
 
 @notifications_router.message(Command("notifications"))

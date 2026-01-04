@@ -7,6 +7,8 @@ from .base import Base
 
 
 class User(Base):
+    """technical entity for timezone usage"""
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -33,10 +35,10 @@ class NotificationSettings(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, unique=True)
-    notify_on_due: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_on_due: Mapped[bool] = mapped_column(Boolean, default=False)
     notify_1_hour: Mapped[bool] = mapped_column(Boolean, default=False)
     notify_3_hours: Mapped[bool] = mapped_column(Boolean, default=False)
-    notify_1_day: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_1_day: Mapped[bool] = mapped_column(Boolean, default=False)
     notify_3_days: Mapped[bool] = mapped_column(Boolean, default=False)
     notify_1_week: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

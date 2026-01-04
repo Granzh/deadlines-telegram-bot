@@ -1,126 +1,236 @@
+import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db.models import Deadline, NotificationSettings, SentNotification
 from db.session import Session
+from exceptions import (
+    DatabaseError,
+    NotificationError,
+    ValidationError,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationService:
-    async def get_or_create_settings(self, user_id: int):
-        async with Session() as session:
-            q = select(NotificationSettings).where(
-                NotificationSettings.user_id == user_id
-            )
-            res = await session.execute(q)
-            settings = res.scalar_one_or_none()
+    def __init__(self, session_factory: async_sessionmaker = Session):
+        self.session_factory = session_factory
 
-            if not settings:
-                settings = NotificationSettings(user_id=user_id)
-                session.add(settings)
-                await session.commit()
-                await session.refresh(settings)
-
-            return settings
-
-    async def update_settings(self, user_id: int, **kwargs):
-        async with Session() as session:
-            q = select(NotificationSettings).where(
-                NotificationSettings.user_id == user_id
-            )
-            res = await session.execute(q)
-            settings = res.scalar_one_or_none()
-
-            if not settings:
-                settings = NotificationSettings(user_id=user_id, **kwargs)
-                session.add(settings)
-            else:
-                for key, value in kwargs.items():
-                    if hasattr(settings, key):
-                        setattr(settings, key, value)
-
-            await session.commit()
-            await session.refresh(settings)
-            return settings
-
-    async def get_deadlines_for_notifications(self):
-        async with Session() as session:
-            now = datetime.now()
-
-            q = select(Deadline).where(Deadline.deadline_at > now)
-            res = await session.execute(q)
-            deadlines = res.scalars().all()
-
-            results = []
-            for deadline in deadlines:
-                settings_q = select(NotificationSettings).where(
-                    NotificationSettings.user_id == deadline.user_id
+    async def get_or_create_settings(self, user_id: int) -> NotificationSettings:
+        """Get or create notification settings for user"""
+        try:
+            async with self.session_factory() as session:
+                q = select(NotificationSettings).where(
+                    NotificationSettings.user_id == user_id
                 )
-                settings_res = await session.execute(settings_q)
-                settings = settings_res.scalar_one_or_none()
+                res = await session.execute(q)
+                settings = res.scalar_one_or_none()
 
                 if not settings:
-                    continue
+                    settings = NotificationSettings(user_id=user_id)
+                    session.add(settings)
+                    await session.commit()
+                    await session.refresh(settings)
+                    logger.info(f"Created notification settings for user {user_id}")
 
-                time_until = deadline.deadline_at - now
+                return settings
 
-                notifications_to_send = []
+        except Exception as e:
+            logger.error(
+                f"Failed to get/create notification settings for user {user_id}: {e}"
+            )
+            raise DatabaseError(f"Failed to get notification settings: {e}") from e
 
-                if settings.notify_1_week and timedelta(
-                    days=7
-                ) <= time_until < timedelta(days=7, minutes=2):
-                    if not await self._was_sent(deadline.id, "1_week"):
-                        notifications_to_send.append(("1_week", "За неделю"))
+    async def update_settings(self, user_id: int, **kwargs) -> NotificationSettings:
+        """Update notification settings for user"""
+        try:
+            # Validate kwargs
+            valid_fields = {
+                "notify_1_week",
+                "notify_3_days",
+                "notify_1_day",
+                "notify_3_hours",
+                "notify_1_hour",
+            }
 
-                if settings.notify_3_days and timedelta(
-                    days=3
-                ) <= time_until < timedelta(days=3, minutes=2):
-                    if not await self._was_sent(deadline.id, "3_days"):
-                        notifications_to_send.append(("3_days", "За 3 дня"))
+            invalid_fields = set(kwargs.keys()) - valid_fields
+            if invalid_fields:
+                raise ValidationError(f"Invalid fields: {invalid_fields}")
 
-                if settings.notify_1_day and timedelta(
-                    days=1
-                ) <= time_until < timedelta(days=1, minutes=2):
-                    if not await self._was_sent(deadline.id, "1_day"):
-                        notifications_to_send.append(("1_day", "За день"))
+            async with self.session_factory() as session:
+                q = select(NotificationSettings).where(
+                    NotificationSettings.user_id == user_id
+                )
+                res = await session.execute(q)
+                settings = res.scalar_one_or_none()
 
-                if settings.notify_3_hours and timedelta(
-                    hours=3
-                ) <= time_until < timedelta(hours=3, minutes=2):
-                    if not await self._was_sent(deadline.id, "3_hours"):
-                        notifications_to_send.append(("3_hours", "За 3 часа"))
+                if not settings:
+                    settings = NotificationSettings(user_id=user_id, **kwargs)
+                    session.add(settings)
+                    logger.info(f"Created notification settings for user {user_id}")
+                else:
+                    for key, value in kwargs.items():
+                        if hasattr(settings, key):
+                            setattr(settings, key, value)
+                    logger.info(f"Updated notification settings for user {user_id}")
 
-                if settings.notify_1_hour and timedelta(
-                    hours=1
-                ) <= time_until < timedelta(hours=1, minutes=2):
-                    if not await self._was_sent(deadline.id, "1_hour"):
-                        notifications_to_send.append(("1_hour", "За час"))
+                await session.commit()
+                await session.refresh(settings)
+                return settings
 
-                for notif_type, notif_text in notifications_to_send:
-                    results.append(
-                        {
-                            "deadline": deadline,
-                            "type": notif_type,
-                            "text": notif_text,
-                            "settings": settings,
-                        }
-                    )
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(
+                f"Failed to update notification settings for user {user_id}: {e}"
+            )
+            raise DatabaseError(f"Failed to update notification settings: {e}") from e
 
-            return results
+    async def get_deadlines_for_notifications(self) -> list[dict]:
+        """Get all deadlines that need notifications"""
+        try:
+            async with self.session_factory() as session:
+                now = datetime.now()
+
+                q = select(Deadline).where(Deadline.deadline_at > now)
+                res = await session.execute(q)
+                deadlines = list(res.scalars().all())
+
+                logger.debug(f"Checking {len(deadlines)} deadlines for notifications")
+                results = []
+
+                for deadline in deadlines:
+                    try:
+                        settings_q = select(NotificationSettings).where(
+                            NotificationSettings.user_id == deadline.user_id
+                        )
+                        settings_res = await session.execute(settings_q)
+                        settings = settings_res.scalar_one_or_none()
+
+                        if not settings:
+                            logger.debug(
+                                f"No notification settings for user {deadline.user_id}"
+                            )
+                            continue
+
+                        time_until = deadline.deadline_at - now
+                        notifications_to_send = []
+
+                        # Check different notification timeframes
+                        notification_checks = [
+                            (
+                                settings.notify_1_week,
+                                timedelta(days=7),
+                                "1_week",
+                                "За неделю",
+                            ),
+                            (
+                                settings.notify_3_days,
+                                timedelta(days=3),
+                                "3_days",
+                                "За 3 дня",
+                            ),
+                            (
+                                settings.notify_1_day,
+                                timedelta(days=1),
+                                "1_day",
+                                "За день",
+                            ),
+                            (
+                                settings.notify_3_hours,
+                                timedelta(hours=3),
+                                "3_hours",
+                                "За 3 часа",
+                            ),
+                            (
+                                settings.notify_1_hour,
+                                timedelta(hours=1),
+                                "1_hour",
+                                "За час",
+                            ),
+                        ]
+
+                        for (
+                            should_notify,
+                            timeframe,
+                            notif_type,
+                            notif_text,
+                        ) in notification_checks:
+                            if (
+                                should_notify
+                                and timeframe
+                                <= time_until
+                                < timeframe + timedelta(minutes=2)
+                            ):
+                                if not await self._was_sent(deadline.id, notif_type):
+                                    notifications_to_send.append(
+                                        (notif_type, notif_text)
+                                    )
+
+                        for notif_type, notif_text in notifications_to_send:
+                            results.append(
+                                {
+                                    "deadline": deadline,
+                                    "type": notif_type,
+                                    "text": notif_text,
+                                    "settings": settings,
+                                }
+                            )
+
+                    except Exception as e:
+                        logger.error(f"Error processing deadline {deadline.id}: {e}")
+                        continue
+
+                logger.info(f"Found {len(results)} notifications to send")
+                return results
+
+        except Exception as e:
+            logger.error(f"Failed to get deadlines for notifications: {e}")
+            raise NotificationError(f"Failed to get notifications: {e}") from e
 
     async def _was_sent(self, deadline_id: int, notification_type: str) -> bool:
-        async with Session() as session:
-            q = select(SentNotification).where(
-                SentNotification.deadline_id == deadline_id,
-                SentNotification.notification_type == notification_type,
-            )
-            res = await session.execute(q)
-            return res.scalar_one_or_none() is not None
+        """Check if notification was already sent"""
+        try:
+            async with self.session_factory() as session:
+                q = select(SentNotification).where(
+                    SentNotification.deadline_id == deadline_id,
+                    SentNotification.notification_type == notification_type,
+                )
+                res = await session.execute(q)
+                was_sent = res.scalar_one_or_none() is not None
 
-    async def mark_as_sent(self, deadline_id: int, notification_type: str):
-        async with Session() as session:
-            notification = SentNotification(
-                deadline_id=deadline_id, notification_type=notification_type
+                if was_sent:
+                    logger.debug(
+                        f"Notification {notification_type} already sent for deadline {deadline_id}"
+                    )
+
+                return was_sent
+
+        except Exception as e:
+            logger.error(
+                f"Failed to check if notification was sent for deadline {deadline_id}: {e}"
             )
-            session.add(notification)
-            await session.commit()
+            # Return True to avoid duplicate notifications in case of error
+            return True
+
+    async def mark_as_sent(self, deadline_id: int, notification_type: str) -> None:
+        """Mark notification as sent"""
+        try:
+            async with self.session_factory() as session:
+                notification = SentNotification(
+                    deadline_id=deadline_id, notification_type=notification_type
+                )
+                session.add(notification)
+                await session.commit()
+                logger.info(
+                    f"Marked notification {notification_type} as sent for deadline {deadline_id}"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to mark notification as sent for deadline {deadline_id}: {e}"
+            )
+            raise NotificationError(f"Failed to mark notification as sent: {e}") from e

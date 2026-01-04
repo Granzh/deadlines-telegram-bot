@@ -11,17 +11,22 @@ from aiogram.types import (
 
 from handlers.fsm_edit_deadline import EditDeadlineFSM
 from services.deadline_service import DeadlineService
+from utils.error_handler import handle_errors
+from db.session import Session
 
 edit_deadline_router = Router()
-service = DeadlineService()
+service = DeadlineService(Session)
 
 
 @edit_deadline_router.message(Command("edit"))
+@handle_errors("Ошибка при загрузке дедлайнов")
 async def edit_deadline_command(msg: Message):
+    """Handle edit command - show list of deadlines to edit"""
+    assert msg.from_user is not None
     deadlines = await service.list_for_user(msg.from_user.id)
 
     if not deadlines:
-        await msg.answer("Нет дедлайнов для редактирования!")
+        await msg.answer("У вас нет дедлайнов для редактирования!")
         return
 
     text_lines = ["Выбери дедлайн для редактирования:", " "]
@@ -46,7 +51,7 @@ async def edit_deadline_command(msg: Message):
 async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     try:
         deadline_id = int(callback.data.split(":", 1)[1])
-    except:
+    except ValueError:
         await callback.answer("Invalid deadline ID", show_alert=True)
         return
 

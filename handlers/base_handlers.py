@@ -8,9 +8,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from handlers.fsm_add_deadline import AddDeadlineFSM
 from services.deadline_service import DeadlineService
+from db.session import Session
 
 router = Router()
-service = DeadlineService()
+service = DeadlineService(Session)
 
 
 @router.message(Command("add"))
@@ -21,8 +22,10 @@ async def add_start(msg: Message, state: FSMContext):
 
 @router.message(Command("list"))
 async def list_deadlines(msg: Message):
+    assert msg.from_user is not None
     tz = await service.get_timezone_for_user(msg.from_user.id)
     deadlines = await service.list_for_user(msg.from_user.id)
+    tzinfo = ZoneInfo(tz)
 
     if not deadlines:
         await msg.answer("Нет дедлайнов!")
@@ -32,7 +35,7 @@ async def list_deadlines(msg: Message):
 
     for i, d in enumerate(deadlines, start=1):
         status = "Не горит"
-        local_dt = d.deadline_at.astimezone(tz)
+        local_dt = d.deadline_at.astimezone(tzinfo)
         text_lines.append(
             f"*{i}.* {status} *{d.title} \n{local_dt.strftime('%d.%m.%Y %H:%M')}"
         )
@@ -42,6 +45,8 @@ async def list_deadlines(msg: Message):
 
 @router.message(Command("change_timezone"))
 async def change_timezone_command(msg: Message):
+    assert msg.text is not None
+    assert msg.from_user is not None
     parts = msg.text.split()
     if len(parts) != 2:
         await msg.answer("Неверный формат команды!")
@@ -56,6 +61,9 @@ async def change_timezone_command(msg: Message):
 
 @router.message(Command("delete"))
 async def delete_deadline_command(msg: Message):
+    assert msg is not None
+    assert msg.from_user is not None
+
     deadlines = await service.list_for_user(msg.from_user.id)
 
     if not deadlines:
@@ -89,6 +97,9 @@ async def add_title(msg: Message, state: FSMContext):
 
 @router.message(AddDeadlineFSM.datetime)
 async def add_datetime(msg: Message, state: FSMContext):
+    assert msg.text is not None
+    assert msg.from_user is not None
+
     dt = dateparser.parse(msg.text, settings={"PREFER_DATES_FROM": "future"})
 
     if not dt:

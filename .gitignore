@@ -7,3 +7,9 @@ __pycache__
 *.db
 .env
 *.sqlite
+.coverage
+htmlcov/
+.venv/
+coverage.xml
+.pytest_cache/
+.ruff_cache/

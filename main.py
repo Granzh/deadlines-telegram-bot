@@ -13,6 +13,8 @@ from handlers.notifications import notifications_router
 from handlers.start_router import start_router
 from scheduler import setup_scheduler
 
+assert BOT_TOKEN is not None
+
 
 async def main():
     bot = Bot(BOT_TOKEN)
