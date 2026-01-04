@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: deadlines-telegram-bot
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - DATABASE_URL=sqlite+aiosqlite:///./data/deadlines.sqlite
+      - SCHEDULER_TIMEZONE=${SCHEDULER_TIMEZONE:-UTC}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DEBUG=${DEBUG:-false}
+      - RATE_LIMIT_TIME_WINDOW=${RATE_LIMIT_TIME_WINDOW:-10}
+      - RATE_LIMIT_MAX_CALLS=${RATE_LIMIT_MAX_CALLS:-5}
+      - NOTIFICATION_CHECK_INTERVAL=${NOTIFICATION_CHECK_INTERVAL:-1}
+      - UPCOMING_CHECK_INTERVAL=${UPCOMING_CHECK_INTERVAL:-1}
+      - DEFAULT_NOTIFICATION_ENABLED=${DEFAULT_NOTIFICATION_ENABLED:-true}
+      - DEFAULT_NOTIFICATION_ADVANCE_HOURS=${DEFAULT_NOTIFICATION_ADVANCE_HOURS:-24}
+      - MAX_NOTIFICATION_ADVANCE_HOURS=${MAX_NOTIFICATION_ADVANCE_HOURS:-168}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bot-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: deadlines-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+
+volumes:
+  redis_data:
