@@ -5,9 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.types import User as TelegramUser
 
 from exceptions import (
-    CallbackDataError,
     DatabaseError,
-    DeadlineNotFoundError,
     ValidationError,
 )
 from utils.error_handler import ErrorHandler, handle_callback_errors, handle_errors

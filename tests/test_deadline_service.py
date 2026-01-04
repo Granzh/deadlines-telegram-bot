@@ -1,16 +1,13 @@
 import logging
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 
 from db.models import Deadline, User
 from exceptions import (
     DeadlineCreationError,
-    DeadlineDeletionError,
     DeadlineNotFoundError,
-    DeadlineUpdateError,
     InvalidDeadlineError,
     InvalidTimezoneError,
     ValidationError,
@@ -435,6 +432,7 @@ class TestDeadlineService:
 
         # Verify deadline was updated
         updated_deadline = await service.get_by_id(sample_deadline.id)
+        assert updated_deadline is not None
         assert updated_deadline.title == new_title
         assert updated_deadline.deadline_at == new_date
 
@@ -452,6 +450,7 @@ class TestDeadlineService:
 
         # Verify deadline was updated
         updated_deadline = await service.get_by_id(sample_deadline.id)
+        assert updated_deadline is not None
         assert updated_deadline.title == new_title
         # Deadline time should remain unchanged
         assert updated_deadline.deadline_at == sample_deadline.deadline_at
@@ -470,6 +469,7 @@ class TestDeadlineService:
 
         # Verify deadline was updated
         updated_deadline = await service.get_by_id(sample_deadline.id)
+        assert updated_deadline is not None
         assert updated_deadline.deadline_at == new_date
         # Title should remain unchanged
         assert updated_deadline.title == sample_deadline.title
@@ -518,6 +518,7 @@ class TestDeadlineService:
         assert result is True
 
         updated_deadline = await service.get_by_id(sample_deadline.id)
+        assert updated_deadline is not None
         assert updated_deadline.title == "Updated Title"
 
     @pytest.mark.asyncio

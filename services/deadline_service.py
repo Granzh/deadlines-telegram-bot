@@ -64,7 +64,6 @@ class DeadlineService:
 
             async with self.session_factory() as session:
                 # Get or create user (technical entity for timezone storage)
-                user = await self._get_or_create_user_by_id(session, user_id)
 
                 deadline = Deadline(user_id=user_id, title=title, deadline_at=dt)
                 session.add(deadline)

@@ -13,7 +13,10 @@
 - [x] Сделать красивый вывод
 
 ##
+
 run tests:
+
 ```bash
+
 uv run run_tests.py
 ```

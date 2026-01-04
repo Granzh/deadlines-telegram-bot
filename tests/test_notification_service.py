@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from db.models import Deadline, NotificationSettings, SentNotification
 from exceptions import (
-    DatabaseError,
     NotificationError,
     ValidationError,
 )
