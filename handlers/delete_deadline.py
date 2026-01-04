@@ -27,7 +27,7 @@ async def delete_deadline(callback: CallbackQuery):
     except ValueError:
         raise CallbackDataError(f"Invalid deadline ID: {callback.data}")
 
-    await service.delete(deadline_id)
+    await service.delete(deadline_id, callback.from_user.id)
 
     # Try to edit the message, but don't fail if we can't
     if callback.message and hasattr(callback.message, "edit_text"):

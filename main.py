@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
 from config import BOT_TOKEN
+from middleware.rate_limit import RateLimitMiddleware
 from db.session import init_db
 from handlers.base_handlers import router
 from handlers.delete_deadline import delete_deadline_router
@@ -19,6 +20,10 @@ assert BOT_TOKEN is not None
 async def main():
     bot = Bot(BOT_TOKEN)
     dp = Dispatcher()
+
+    # Add rate limiting middleware
+    dp.message.middleware(RateLimitMiddleware(time_limit=10, max_calls=5))
+    dp.callback_query.middleware(RateLimitMiddleware(time_limit=10, max_calls=5))
 
     commands = [
         BotCommand(command="start", description="Запуск бота"),

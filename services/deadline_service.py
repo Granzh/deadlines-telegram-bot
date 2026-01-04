@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db.models import Deadline, User
 from db.session import Session
+from utils.validation import validate_telegram_user
 from exceptions import (
     DatabaseError,
     DeadlineCreationError,
@@ -28,6 +29,20 @@ class DeadlineService:
 
     async def _get_or_create_user_by_id(self, session, user_id: int) -> User:
         """Get or create user by internal ID (technical entity for timezone storage)"""
+        # Validate user ID
+        try:
+            validate_telegram_user(
+                {
+                    "user_id": user_id,
+                    "username": None,
+                    "first_name": None,
+                    "is_bot": False,
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Invalid user_id {user_id}: {e}")
+            raise ValidationError(f"Invalid user ID: {e}")
+
         user_query = select(User).where(User.telegram_id == user_id)
         user_result = await session.execute(user_query)
         user = user_result.scalar_one_or_none()
@@ -113,9 +128,23 @@ class DeadlineService:
             logger.error(f"Failed to list deadlines for user {user_id}: {e}")
             raise DatabaseError(f"Failed to list deadlines: {e}") from e
 
-    async def delete(self, deadline_id: int) -> bool:
-        """Delete a deadline by ID"""
+    async def delete(self, deadline_id: int, user_id: int) -> bool:
+        """Delete a deadline by ID for authorized user"""
         try:
+            # Validate user ID
+            try:
+                validate_telegram_user(
+                    {
+                        "user_id": user_id,
+                        "username": None,
+                        "first_name": None,
+                        "is_bot": False,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Invalid user_id {user_id}: {e}")
+                raise ValidationError(f"Invalid user ID: {e}")
+
             async with self.session_factory() as session:
                 q = select(Deadline).where(Deadline.id == deadline_id)
                 res = await session.execute(q)
@@ -123,6 +152,13 @@ class DeadlineService:
 
                 if not deadline:
                     raise DeadlineNotFoundError(deadline_id)
+
+                # Authorization check: user can only delete their own deadlines
+                if deadline.user_id != user_id:
+                    logger.warning(
+                        f"User {user_id} attempted to delete deadline {deadline_id} belonging to user {deadline.user_id}"
+                    )
+                    raise ValidationError("You can only delete your own deadlines")
 
                 await session.delete(deadline)
                 await session.commit()
@@ -136,15 +172,35 @@ class DeadlineService:
             logger.error(f"Failed to delete deadline {deadline_id}: {e}")
             raise DeadlineDeletionError(f"Failed to delete deadline: {e}") from e
 
-    async def get_by_id(self, deadline_id: int) -> Optional[Deadline]:
-        """Get a deadline by ID"""
+    async def get_by_id(self, deadline_id: int, user_id: int) -> Optional[Deadline]:
+        """Get a deadline by ID for authorized user"""
         try:
+            # Validate user ID
+            try:
+                validate_telegram_user(
+                    {
+                        "user_id": user_id,
+                        "username": None,
+                        "first_name": None,
+                        "is_bot": False,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Invalid user_id {user_id}: {e}")
+                raise ValidationError(f"Invalid user ID: {e}")
+
             async with self.session_factory() as session:
                 q = select(Deadline).where(Deadline.id == deadline_id)
                 res = await session.execute(q)
                 deadline = res.scalar_one_or_none()
 
                 if deadline:
+                    # Authorization check: user can only access their own deadlines
+                    if deadline.user_id != user_id:
+                        logger.warning(
+                            f"User {user_id} attempted to access deadline {deadline_id} belonging to user {deadline.user_id}"
+                        )
+                        raise ValidationError("You can only access your own deadlines")
                     logger.debug(f"Found deadline {deadline_id}")
                 else:
                     logger.debug(f"Deadline {deadline_id} not found")

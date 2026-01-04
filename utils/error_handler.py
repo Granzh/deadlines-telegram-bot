@@ -1,4 +1,5 @@
 import logging
+import re
 from functools import wraps
 from typing import Callable, Any, Awaitable
 
@@ -11,6 +12,33 @@ from exceptions import DeadlineBotError, ValidationError, DatabaseError
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_error_message(message: str) -> str:
+    """Remove sensitive information from error messages"""
+    if not message:
+        return "Unknown error"
+
+    # Remove potential sensitive patterns
+    message = re.sub(r"\b\d{10,}\b", "[ID]", message)  # Long numbers
+    message = re.sub(r'token[_\s]*=[\s\'"]+[a-zA-Z0-9_-]+', "token=[REDACTED]", message)
+    message = re.sub(
+        r'password[_\s]*=[\s\'"]+[^\s\'"]+', "password=[REDACTED]", message
+    )
+    message = re.sub(r'secret[_\s]*=[\s\'"]+[^\s\'"]+', "secret=[REDACTED]", message)
+    message = re.sub(
+        r'api[_\s]*key[_\s]*=[\s\'"]+[^\s\'"]+', "api_key=[REDACTED]", message
+    )
+
+    # Remove file paths
+    message = re.sub(r"/[^/\s]+/[^/\s]+", "[PATH]", message)
+    message = re.sub(r"[A-Za-z]:\\[^\\\s]+\\[^\\\s]+", "[PATH]", message)
+
+    # Limit length
+    if len(message) > 200:
+        message = message[:200] + "..."
+
+    return message
+
+
 def handle_errors(message: str = "Произошла ошибка. Попробуйте позже.") -> Callable:
     """Decorator for handling errors in bot handlers"""
 
@@ -21,8 +49,11 @@ def handle_errors(message: str = "Произошла ошибка. Попроб�
                 return await func(*args, **kwargs)
 
             except ValidationError as e:
-                logger.warning(f"Validation error in {func.__name__}: {e}")
-                await _send_error_message(args, message, str(e))
+                sanitized_error = _sanitize_error_message(str(e))
+                logger.warning(
+                    f"Validation error in {func.__name__}: {sanitized_error}"
+                )
+                await _send_error_message(args, message, "Invalid input provided")
                 return None
 
             except DatabaseError as e:
@@ -36,8 +67,10 @@ def handle_errors(message: str = "Произошла ошибка. Попроб�
                 return None
 
             except Exception as e:
+                sanitized_error = _sanitize_error_message(str(e))
                 logger.critical(
-                    f"Unexpected error in {func.__name__}: {e}", exc_info=True
+                    f"Unexpected error in {func.__name__}: {sanitized_error}",
+                    exc_info=True,
                 )
                 await _send_error_message(args, message)
                 return None
@@ -89,8 +122,13 @@ def handle_callback_errors(
                 return await func(*args, **kwargs)
 
             except ValidationError as e:
-                logger.warning(f"Validation error in callback {func.__name__}: {e}")
-                await _answer_callback(args, message, str(e), show_alert=True)
+                sanitized_error = _sanitize_error_message(str(e))
+                logger.warning(
+                    f"Validation error in callback {func.__name__}: {sanitized_error}"
+                )
+                await _answer_callback(
+                    args, message, "Invalid input provided", show_alert=True
+                )
                 return None
 
             except DatabaseError as e:

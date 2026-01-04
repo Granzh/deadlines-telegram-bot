@@ -201,7 +201,7 @@ class TestDeadlineService:
         """Test successful deadline deletion"""
         service = DeadlineService(db_session)
 
-        result = await service.delete(sample_deadline.id)
+        result = await service.delete(sample_deadline.id, sample_deadline.user_id)
 
         assert result is True
 
@@ -224,7 +224,7 @@ class TestDeadlineService:
         service = DeadlineService(db_session)
 
         with pytest.raises(DeadlineNotFoundError):
-            await service.delete(99999)
+            await service.delete(99999, 1)
 
     @pytest.mark.asyncio
     async def test_delete_deadline_error(
@@ -240,7 +240,7 @@ class TestDeadlineService:
         )
 
         with pytest.raises(Exception):
-            await service.delete(sample_deadline.id)
+            await service.delete(sample_deadline.id, sample_deadline.user_id)
 
         assert "Something went wrong" in caplog.text
 
@@ -249,7 +249,7 @@ class TestDeadlineService:
         """Test getting deadline by ID"""
         service = DeadlineService(db_session)
 
-        deadline = await service.get_by_id(sample_deadline.id)
+        deadline = await service.get_by_id(sample_deadline.id, sample_deadline.user_id)
 
         assert deadline is not None
         assert deadline.id == sample_deadline.id
@@ -260,7 +260,7 @@ class TestDeadlineService:
         """Test getting non-existent deadline by ID"""
         service = DeadlineService(db_session)
 
-        deadline = await service.get_by_id(99999)
+        deadline = await service.get_by_id(99999, 1)
 
         assert deadline is None
 
@@ -276,7 +276,7 @@ class TestDeadlineService:
         )
 
         with pytest.raises(Exception):
-            await service.get_by_id(sample_deadline.id)
+            await service.get_by_id(sample_deadline.id, sample_deadline.user_id)
 
     @pytest.mark.asyncio
     async def test_get_or_create_user_new_user(self, session, db_session):
@@ -431,7 +431,9 @@ class TestDeadlineService:
         assert result is True
 
         # Verify deadline was updated
-        updated_deadline = await service.get_by_id(sample_deadline.id)
+        updated_deadline = await service.get_by_id(
+            sample_deadline.id, sample_deadline.user_id
+        )
         assert updated_deadline is not None
         assert updated_deadline.title == new_title
         assert updated_deadline.deadline_at == new_date
@@ -449,7 +451,9 @@ class TestDeadlineService:
         assert result is True
 
         # Verify deadline was updated
-        updated_deadline = await service.get_by_id(sample_deadline.id)
+        updated_deadline = await service.get_by_id(
+            sample_deadline.id, sample_deadline.user_id
+        )
         assert updated_deadline is not None
         assert updated_deadline.title == new_title
         # Deadline time should remain unchanged
@@ -468,7 +472,9 @@ class TestDeadlineService:
         assert result is True
 
         # Verify deadline was updated
-        updated_deadline = await service.get_by_id(sample_deadline.id)
+        updated_deadline = await service.get_by_id(
+            sample_deadline.id, sample_deadline.user_id
+        )
         assert updated_deadline is not None
         assert updated_deadline.deadline_at == new_date
         # Title should remain unchanged
@@ -517,7 +523,9 @@ class TestDeadlineService:
 
         assert result is True
 
-        updated_deadline = await service.get_by_id(sample_deadline.id)
+        updated_deadline = await service.get_by_id(
+            sample_deadline.id, sample_deadline.user_id
+        )
         assert updated_deadline is not None
         assert updated_deadline.title == "Updated Title"
 

@@ -55,7 +55,7 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Invalid deadline ID", show_alert=True)
         return
 
-    deadline = await service.get_by_id(deadline_id)
+    deadline = await service.get_by_id(deadline_id, callback.from_user.id)
     if not deadline:
         await callback.answer("Deadline not found", show_alert=True)
         return
