@@ -4,7 +4,6 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
 from config import BOT_TOKEN
-from middleware.rate_limit import RateLimitMiddleware
 from db.session import init_db
 from handlers.base_handlers import router
 from handlers.delete_deadline import delete_deadline_router
@@ -12,6 +11,7 @@ from handlers.edit_deadline import edit_deadline_router
 from handlers.help import help_router
 from handlers.notifications import notifications_router
 from handlers.start_router import start_router
+from middleware.rate_limit import RateLimitMiddleware
 from scheduler import setup_scheduler
 
 assert BOT_TOKEN is not None
@@ -33,7 +33,7 @@ async def main():
         BotCommand(command="edit", description="Редактировать дедлайн"),
         BotCommand(command="delete", description="Удалить дедлайн"),
         BotCommand(command="notifications", description="Настройки уведомлений"),
-        BotCommand(command="timezone", description="Настройки часового пояса"),
+        BotCommand(command="change_timezone", description="Настройки часового пояса"),
     ]
 
     dp.include_router(router)

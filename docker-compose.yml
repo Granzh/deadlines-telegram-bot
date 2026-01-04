@@ -24,6 +24,18 @@ services:
     networks:
       - bot-network
 
+  migrations:
+    build: .
+    container_name: deadlines-migrations
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/deadlines.sqlite
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bot-network
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    profiles: ["migrations"]
+
   redis:
     image: redis:7-alpine
     container_name: deadlines-redis

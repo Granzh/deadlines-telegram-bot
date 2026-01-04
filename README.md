@@ -20,3 +20,17 @@ run tests:
 
 uv run run_tests.py
 ```
+
+run migrations:
+
+```bash
+
+docker-compose --profile migrations up migrations
+```
+
+run bot:
+
+```bash
+
+docker-compose up -d
+```

@@ -1,19 +1,19 @@
 import logging
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from config import SQL_URL
+from config import settings
 from exceptions import DatabaseError
 
 from .base import Base
 
 logger = logging.getLogger(__name__)
 
-assert SQL_URL is not None
-
 engine = create_async_engine(
-    SQL_URL,
+    str(settings.database_url),
     echo=False,
     pool_size=20,
     max_overflow=30,
@@ -23,12 +23,24 @@ engine = create_async_engine(
 Session = async_sessionmaker(engine, expire_on_commit=False)
 
 
+async def run_migrations():
+    """Run Alembic migrations"""
+    try:
+        logger.info("Running database migrations...")
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", str(settings.database_url))
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Failed to run migrations: {e}")
+        raise DatabaseError(f"Migration failed: {e}") from e
+
+
 async def init_db():
-    """Initialize database with error handling"""
+    """Initialize database with error handling using migrations"""
     try:
         logger.info("Initializing database...")
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+        await run_migrations()
         logger.info("Database initialized successfully")
     except SQLAlchemyError as e:
         logger.error(f"Failed to initialize database: {e}")
