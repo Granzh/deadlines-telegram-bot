@@ -61,7 +61,7 @@ jobs:
                   uv run pytest --cov=.  --cov-report=xml --cov-report=html --cov-report=term-missing
               env:
                   BOT_TOKEN: ${{ secrets.TEST_BOT_TOKEN || 'test_token_placeholder' }}
-                  DATABASE_URL: sqlite+aiosqlite:///:memory:
+                  DATABASE_URL: "sqlite+aiosqlite:///:memory:"
                   ENVIRONMENT: testing
 
             - name: Upload coverage to Codecov
