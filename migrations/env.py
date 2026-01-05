@@ -5,7 +5,7 @@ import asyncio
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import AsyncEngine, async_engine_from_config
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from config import settings
 from db.base import Base
@@ -41,8 +41,10 @@ async def run_async_migrations() -> None:
     configuration = context.config
     configuration.set_main_option("sqlalchemy.url", get_url())
 
-    connectable = AsyncEngine(
-        context.config.attributes.get("engine", pool.NullPool(get_url()))
+    connectable = async_engine_from_config(
+        {"sqlalchemy.url": get_url()},
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
 
     async with connectable.connect() as connection:
@@ -54,8 +56,9 @@ async def run_async_migrations() -> None:
 async def run_migrations_online() -> None:
     config = context.config
 
+    config_section = config.get_section(config.config_ini_section) or {}
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section),
+        config_section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
@@ -65,15 +68,23 @@ async def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
-    async def run():
+    try:
+        asyncio.get_running_loop()
+        # We're already in an event loop
         async with connectable.connect() as connection:
             await connection.run_sync(do_run_migrations)
         await connectable.dispose()
+    except RuntimeError:
+        # No event loop running, use asyncio.run()
+        async def run():
+            async with connectable.connect() as connection:
+                await connection.run_sync(do_run_migrations)
+            await connectable.dispose()
 
-    asyncio.run(run())
+        asyncio.run(run())
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

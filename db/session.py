@@ -1,7 +1,5 @@
 import logging
 
-from alembic import command
-from alembic.config import Config
 from sqlalchemy import StaticPool
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -16,16 +14,14 @@ logger = logging.getLogger(__name__)
 is_sqlite = str(settings.database_url).startswith("sqlite")
 
 # Configure engine parameters based on database type
-engine_params = {
+engine_params: dict[str, object] = {
     "echo": False,
-    "pool_size": None,
 }
 
 if is_sqlite:
     # SQLite-specific configuration
     engine_params["poolclass"] = StaticPool
     engine_params["connect_args"] = {"check_same_thread": False}
-    engine_params.pop("pool_size", None)
 else:
     # Server database configuration (PostgreSQL, MySQL, etc.)
     engine_params["pool_size"] = 20
@@ -35,19 +31,6 @@ else:
 
 engine = create_async_engine(str(settings.database_url), **engine_params)
 Session = async_sessionmaker(engine, expire_on_commit=False)
-
-
-async def run_migrations():
-    """Run Alembic migrations"""
-    try:
-        logger.info("Running database migrations...")
-        alembic_cfg = Config("alembic.ini")
-        alembic_cfg.set_main_option("sqlalchemy.url", str(settings.database_url))
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations completed successfully")
-    except Exception as e:
-        logger.error(f"Failed to run migrations: {e}")
-        raise DatabaseError(f"Migration failed: {e}") from e
 
 
 async def init_db():

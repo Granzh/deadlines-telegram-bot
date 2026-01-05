@@ -82,19 +82,21 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     try:
         if callback.data is None:
             raise Exception("Invalid callback data")
-        await callback.message.edit_text(
-            f"Что хочешь изменить в дедлайне?\n\n"
-            f"{deadline.title}\n"
-            f"Срок: {deadline.deadline_at}",
-            reply_markup=keyboard,
-        )
+        if callback.message is not None and not isinstance(callback.message, str):
+            await callback.message.edit_text(
+                f"Что хочешь изменить в дедлайне?\n\n"
+                f"{deadline.title}\n"
+                f"Срок: {deadline.deadline_at}",
+                reply_markup=keyboard,
+            )
     except Exception:
-        await callback.message.answer(
-            f"Что хочешь изменить в дедлайне?\n\n"
-            f"{deadline.title}\n"
-            f"Срок: {deadline.deadline_at}",
-            reply_markup=keyboard,
-        )
+        if callback.message is not None and not isinstance(callback.message, str):
+            await callback.message.answer(
+                f"Что хочешь изменить в дедлайне?\n\n"
+                f"{deadline.title}\n"
+                f"Срок: {deadline.deadline_at}",
+                reply_markup=keyboard,
+            )
 
     await callback.answer()
     await state.set_state(EditDeadlineFSM.choose_field)
@@ -114,27 +116,34 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
                 "Редактирование отменено", parse_mode="Markdown"
             )
         except Exception:
-            await callback.message.answer(
-                "Редактирование отменено", parse_mode="Markdown"
-            )
+            if callback.message is not None and not isinstance(callback.message, str):
+                await callback.message.answer(
+                    "Редактирование отменено", parse_mode="Markdown"
+                )
         await callback.answer()
         return
 
     if field == "title":
         try:
-            await callback.message.edit_text(
-                "Введи новое название дедлайна:", parse_mode="Markdown"
-            )
+            if callback.message is not None and not isinstance(callback.message, str):
+                await callback.message.edit_text(
+                    "Введи новое название дедлайна:", parse_mode="Markdown"
+                )
         except Exception:
-            await callback.message.answer(
-                "Введи новое название дедлайна:", parse_mode="Markdown"
-            )
+            if callback.message is not None and not isinstance(callback.message, str):
+                await callback.message.answer(
+                    "Введи новое название дедлайна:", parse_mode="Markdown"
+                )
         await state.set_state(EditDeadlineFSM.edit_title)
     elif field == "datetime":
         try:
-            await callback.message.edit_text("Введи новую дату", parse_mode="Markdown")
+            if callback.message is not None and not isinstance(callback.message, str):
+                await callback.message.edit_text(
+                    "Введи новую дату", parse_mode="Markdown"
+                )
         except Exception:
-            await callback.message.answer("Введи новую дату", parse_mode="Markdown")
+            if callback.message is not None and not isinstance(callback.message, str):
+                await callback.message.answer("Введи новую дату", parse_mode="Markdown")
         await state.set_state(EditDeadlineFSM.edit_datetime)
 
     await callback.answer()

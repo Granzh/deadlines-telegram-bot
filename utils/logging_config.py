@@ -1,12 +1,12 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 import structlog
 
 
-def setup_logging(log_level: str = "INFO", log_file: str = None) -> None:
+def setup_logging(log_level: str = "INFO", log_file: Optional[str] = None) -> None:
     """Setup structured logging for the application"""
 
     # Convert string level to logging constant
@@ -37,7 +37,7 @@ def setup_logging(log_level: str = "INFO", log_file: str = None) -> None:
     )
 
     # Configure standard logging
-    handlers = []
+    handlers: List[logging.Handler] = []
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)

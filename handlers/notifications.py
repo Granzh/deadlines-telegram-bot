@@ -16,6 +16,8 @@ service = NotificationService(Session)
 
 @notifications_router.message(Command("notifications"))
 async def notifications_command(msg: Message):
+    if msg.from_user is None:
+        return
     settings = await service.get_or_create_settings(msg.from_user.id)
 
     text = "⚙️ *Настройки уведомлений*\n\n"
@@ -136,7 +138,8 @@ async def toggle_notification(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons, parse_mode="Markdown")
 
     try:
-        await callback.message.edit_text(text, reply_markup=keyboard)
+        if callback.message is not None and not isinstance(callback.message, str):
+            await callback.message.edit_text(text, reply_markup=keyboard)
     except Exception:
         pass
 

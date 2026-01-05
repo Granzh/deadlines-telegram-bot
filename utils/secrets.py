@@ -16,8 +16,8 @@ class SecretsManager:
     def __init__(self, key_file: str = ".secrets.key"):
         self.key_file = Path(key_file)
         self.secrets_file = Path(".secrets.enc")
-        self._key = None
-        self._fernet = None
+        self._key: Optional[bytes] = None
+        self._fernet: Optional[Fernet] = None
 
     def _get_or_create_key(self) -> bytes:
         """Get or create encryption key"""
