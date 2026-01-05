@@ -1,10 +1,7 @@
 name: CD
 
 on:
-    workflow_run:
-        workflows: ["CI"]
-        types:
-            - completed
+    push:
         branches: [main]
 
 jobs:
@@ -56,25 +53,21 @@ jobs:
                   cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/deadlines-telegram-bot:buildcache
                   cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/deadlines-telegram-bot:buildcache,mode=max
 
-            - name: Deploy to production server
-              uses: appleboy/ssh-action@v1.0.3
-              with:
-                  host: ${{ secrets.SERVER_HOST }}
-                  username: ${{ secrets.SERVER_USERNAME }}
-                  key: ${{ secrets.SSH_PRIVATE_KEY }}
-                  port: ${{ secrets.SERVER_PORT || 22 }}
-                  script: |
-                      cd /opt/deadlines-telegram-bot
-                      docker-compose pull
-                      docker-compose up -d --force-recreate
-                      docker image prune -f
+            #- name: Deploy to production server
+            #  uses: appleboy/ssh-action@v1.0.3
+            #  with:
+            #      host: ${{ secrets.SERVER_HOST }}
+            #      username: ${{ secrets.SERVER_USERNAME }}
+            #      key: ${{ secrets.SSH_PRIVATE_KEY }}
+            #      port: ${{ secrets.SERVER_PORT || 22 }}
+            #      script: |
+            #          cd /opt/deadlines-telegram-bot
+            #          docker-compose pull
+            #          docker-compose up -d --force-recreate
+            #          docker image prune -f
 
-            - name: Health check
-              run: |
-                  sleep 30
-                  curl -f ${{ secrets.HEALTH_CHECK_URL }} || exit 1
-              env:
-                  HEALTH_CHECK_URL: ${{ secrets.HEALTH_CHECK_URL }}
+            #- name: Health check
+            # TODO
 
     notify:
         name: Notify deployment status
