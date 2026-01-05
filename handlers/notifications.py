@@ -133,7 +133,7 @@ async def toggle_notification(callback: CallbackQuery):
         ],
     ]
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons, parse_mode="Markdown")
 
     try:
         await callback.message.edit_text(text, reply_markup=keyboard)

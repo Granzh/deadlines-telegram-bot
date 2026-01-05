@@ -25,6 +25,7 @@ async def check_deadlines():
         await bot.send_message(
             deadline.user_id,
             f"🔥 Дедлайн *{deadline.title}* просрочен!\n\nСрок был: {deadline.deadline_at}",
+            parse_mode="Markdown",
         )
 
 
@@ -45,7 +46,7 @@ async def check_upcoming_deadlines():
         )
 
         try:
-            await bot.send_message(deadline.user_id, message)
+            await bot.send_message(deadline.user_id, message, parse_mode="Markdown")
             await notification_service.mark_as_sent(deadline.id, notif_type)
         except Exception as e:
             logger.error(f"Error sending notification: {e}")

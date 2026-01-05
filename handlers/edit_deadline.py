@@ -110,23 +110,31 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
         try:
             if callback.message is None:
                 raise Exception("Invalid message")
-            await callback.message.edit_text("Редактирование отменено")
+            await callback.message.edit_text(
+                "Редактирование отменено", parse_mode="Markdown"
+            )
         except Exception:
-            await callback.message.answer("Редактирование отменено")
+            await callback.message.answer(
+                "Редактирование отменено", parse_mode="Markdown"
+            )
         await callback.answer()
         return
 
     if field == "title":
         try:
-            await callback.message.edit_text("Введи новое название дедлайна:")
+            await callback.message.edit_text(
+                "Введи новое название дедлайна:", parse_mode="Markdown"
+            )
         except Exception:
-            await callback.message.answer("Введи новое название дедлайна:")
+            await callback.message.answer(
+                "Введи новое название дедлайна:", parse_mode="Markdown"
+            )
         await state.set_state(EditDeadlineFSM.edit_title)
     elif field == "datetime":
         try:
-            await callback.message.edit_text("Введи новую дату")
+            await callback.message.edit_text("Введи новую дату", parse_mode="Markdown")
         except Exception:
-            await callback.message.answer("Введи новую дату")
+            await callback.message.answer("Введи новую дату", parse_mode="Markdown")
         await state.set_state(EditDeadlineFSM.edit_datetime)
 
     await callback.answer()
@@ -138,15 +146,17 @@ async def process_new_title(msg: Message, state: FSMContext):
     deadline_id = data.get("deadline_id")
 
     if not deadline_id:
-        await msg.answer("Ошибка: дедлайн не найден")
+        await msg.answer("Ошибка: дедлайн не найден", parse_mode="Markdown")
         await state.clear()
         return
 
     ok = await service.update(deadline_id, title=msg.text)
     if ok:
-        await msg.answer(f"Название успешно изменено на: *{msg.text}*")
+        await msg.answer(
+            f"Название успешно изменено на: *{msg.text}*", parse_mode="Markdown"
+        )
     else:
-        await msg.answer("Не удалось обновить дедлайн")
+        await msg.answer("Не удалось обновить дедлайн", parse_mode="Markdown")
 
     await state.clear()
 
@@ -156,7 +166,7 @@ async def process_new_datetime(msg: Message, state: FSMContext):
     dt = dateparser.parse(msg.text, settings={"PREFER_DATES_FROM": "future"})
 
     if not dt:
-        await msg.answer("Не понял дату(")
+        await msg.answer("Не понял дату", parse_mode="Markdown")
         return
 
     from datetime import timezone
@@ -167,7 +177,7 @@ async def process_new_datetime(msg: Message, state: FSMContext):
     deadline_id = data.get("deadline_id")
 
     if not deadline_id:
-        await msg.answer("Ошибка: дедлайн не найден")
+        await msg.answer("Ошибка: дедлайн не найден", parse_mode="Markdown")
         await state.clear()
         return
 
@@ -175,6 +185,6 @@ async def process_new_datetime(msg: Message, state: FSMContext):
     if ok:
         await msg.answer(f"Дата успешно изменена на: {dt}")
     else:
-        await msg.answer("Не удалось обновить дедлайн")
+        await msg.answer("Не удалось обновить дедлайн", parse_mode="Markdown")
 
     await state.clear()

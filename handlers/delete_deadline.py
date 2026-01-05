@@ -30,9 +30,9 @@ async def delete_deadline(callback: CallbackQuery):
     # Try to edit the message, but don't fail if we can't
     if callback.message and hasattr(callback.message, "edit_text"):
         try:
-            await callback.message.edit_text("✅ Дедлайн удален")
+            await callback.message.edit_text("✅ Дедлайн удален", parse_mode="Markdown")
         except Exception:
             # Message might be too old or already edited
             pass
 
-    await callback.answer("Дедлайн удален")
+    await callback.answer("Дедлайн удален", parse_mode="Markdown")

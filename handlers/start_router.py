@@ -7,4 +7,4 @@ start_router = Router()
 
 @start_router.message(Command("start"))
 async def start(msg: Message):
-    await msg.answer("Welcome to the deadline bot!")
+    await msg.answer("Welcome to the deadline bot!", parse_mode="Markdown")

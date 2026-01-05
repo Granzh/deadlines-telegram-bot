@@ -29,4 +29,4 @@ HELP_TEXT = """
 
 @help_router.message(Command("help"))
 async def help_handler(message: Message):
-    await message.answer(HELP_TEXT)
+    await message.answer(HELP_TEXT, parse_mode="Markdown")
