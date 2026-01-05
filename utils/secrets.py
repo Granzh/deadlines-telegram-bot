@@ -2,14 +2,12 @@
 Secure secrets management utilities
 """
 
-import os
 import json
-import base64
+import os
 from pathlib import Path
 from typing import Dict, Optional
+
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class SecretsManager:

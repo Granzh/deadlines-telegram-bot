@@ -1,27 +1,21 @@
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime, timezone
 
-from utils.error_messages import (
-    get_error_message,
-    get_success_message,
-    get_help_message,
-    get_validation_message,
-    format_exception_message,
-    format_deadline_error,
-    format_validation_error,
-    format_callback_error,
-    EXCEPTION_FORMATTERS,
-)
-
 from exceptions import (
-    InvalidDeadlineError,
-    ValidationError,
     CallbackDataError,
+    InvalidDeadlineError,
     InvalidTimezoneError,
-    DeadlineNotFoundError,
-    DatabaseError,
-    NotificationError,
+    ValidationError,
+)
+from utils.error_messages import (
+    EXCEPTION_FORMATTERS,
+    format_callback_error,
+    format_deadline_error,
+    format_exception_message,
+    format_validation_error,
+    get_error_message,
+    get_help_message,
+    get_success_message,
+    get_validation_message,
 )
 
 

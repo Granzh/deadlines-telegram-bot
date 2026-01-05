@@ -204,14 +204,18 @@ class NotificationService:
 
                 if was_sent:
                     logger.debug(
-                        f"Notification {notification_type} already sent for deadline {deadline_id}"
+                        f"""Notification {notification_type} already
+                        sent for deadline {deadline_id}
+                        """
                     )
 
                 return was_sent
 
         except Exception as e:
             logger.error(
-                f"Failed to check if notification was sent for deadline {deadline_id}: {e}"
+                f"""Failed to check if notification
+                was sent for deadline {deadline_id}: {e}
+                """
             )
             # Return True to avoid duplicate notifications in case of error
             return True
@@ -226,7 +230,9 @@ class NotificationService:
                 session.add(notification)
                 await session.commit()
                 logger.info(
-                    f"Marked notification {notification_type} as sent for deadline {deadline_id}"
+                    f"""Marked notification {notification_type}
+                    as sent for deadline {deadline_id}
+                    """
                 )
 
         except Exception as e:

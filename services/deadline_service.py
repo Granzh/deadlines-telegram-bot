@@ -156,7 +156,8 @@ class DeadlineService:
                 # Authorization check: user can only delete their own deadlines
                 if deadline.user_id != user_id:
                     logger.warning(
-                        f"User {user_id} attempted to delete deadline {deadline_id} belonging to user {deadline.user_id}"
+                        f"""User {user_id} attempted to delete deadline {deadline_id}
+                        belonging to user {deadline.user_id}"""
                     )
                     raise ValidationError("You can only delete your own deadlines")
 
@@ -198,7 +199,8 @@ class DeadlineService:
                     # Authorization check: user can only access their own deadlines
                     if deadline.user_id != user_id:
                         logger.warning(
-                            f"User {user_id} attempted to access deadline {deadline_id} belonging to user {deadline.user_id}"
+                            f"""User {user_id} attempted to access deadline {deadline_id}
+                            belonging to user {deadline.user_id}"""
                         )
                         raise ValidationError("You can only access your own deadlines")
                     logger.debug(f"Found deadline {deadline_id}")

@@ -1,20 +1,21 @@
-import pytest
 from datetime import datetime
 
+import pytest
+
 from exceptions import (
-    DeadlineBotError,
+    CallbackDataError,
     DatabaseError,
+    DeadlineBotError,
+    DeadlineCreationError,
+    DeadlineDeletionError,
     DeadlineNotFoundError,
-    ValidationError,
-    InvalidTimezoneError,
+    DeadlineUpdateError,
     InvalidDateError,
     InvalidDeadlineError,
-    CallbackDataError,
+    InvalidTimezoneError,
     NotificationError,
     TimezoneConversionError,
-    DeadlineCreationError,
-    DeadlineUpdateError,
-    DeadlineDeletionError,
+    ValidationError,
 )
 
 
@@ -202,7 +203,8 @@ class TestDeadlineCreationError:
         error = DeadlineCreationError("Failed to create deadline")
         assert isinstance(error, Exception)
         assert isinstance(error, DeadlineBotError)
-        # Note: ServiceError is not imported in exceptions.py, so we test DeadlineBotError directly
+        # Note: ServiceError is not imported in exceptions.py,
+        # so we test DeadlineBotError directly
 
 
 class TestDeadlineUpdateError:
@@ -277,7 +279,7 @@ class TestExceptionEquality:
         """Test that different exception types are not equal"""
         error1 = DeadlineNotFoundError(123)
         error2 = InvalidTimezoneError("UTC")
-        assert type(error1) != type(error2)
+        assert isinstance(error1, type(error2)) is False
         assert str(error1) != str(error2)
 
 

@@ -4,10 +4,8 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from db.base import Base
-from db.models import Deadline, NotificationSettings, SentNotification, User
+from db.models import Deadline, User
 from db.session import check_db_connection, engine, init_db
 from exceptions import DatabaseError
 

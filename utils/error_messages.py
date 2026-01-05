@@ -10,7 +10,8 @@ ERROR_MESSAGES = {
     "database_error": "Ошибка базы данных. Попробуйте позже.",
     # Deadline errors
     "deadline_not_found": "Дедлайн не найден.",
-    "deadline_create_error": "Не удалось создать дедлайн. Проверьте данные и попробуйте снова.",
+    "deadline_create_error": """Не удалось создать дедлайн.
+    Проверьте данные и попробуйте снова.""",
     "deadline_update_error": "Не удалось обновить дедлайн. Попробуйте позже.",
     "deadline_delete_error": "Не удалось удалить дедлайн. Попробуйте позже.",
     "deadline_in_past": "Дедлайн не может быть в прошлом.",
@@ -19,7 +20,8 @@ ERROR_MESSAGES = {
     "invalid_timezone": "Неверный часовой пояс. Используйте формат 'Europe/Moscow'.",
     "timezone_conversion_error": "Ошибка преобразования часового пояса.",
     # Date parsing errors
-    "invalid_date": "Не удалось распознать дату. Используйте формат 'ДД.ММ.ГГГГ ЧЧ:ММ'.",
+    "invalid_date": """Не удалось распознать дату.
+    Используйте формат 'ДД.ММ.ГГГГ ЧЧ:ММ'.""",
     "date_in_past": "Дата не может быть в прошлом.",
     # Callback data errors
     "invalid_callback_data": "Некорректные данные. Попробуйте снова.",
@@ -29,7 +31,8 @@ ERROR_MESSAGES = {
     "notification_settings_error": "Ошибка настроек уведомлений.",
     # Input validation
     "empty_input": "Поле не может быть пустым.",
-    "too_long_input": "Слишком длинный текст. Максимальная длина: {max_length} символов.",
+    "too_long_input": """Слишком длинный текст. Максимальная длина: {max_length} символов.
+    Попробуйте сократить текст.""",
     "invalid_number": "Неверный формат числа.",
     # Rate limiting
     "rate_limit": "Слишком много запросов. Подождите немного перед следующей командой.",

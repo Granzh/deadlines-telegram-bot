@@ -1,9 +1,8 @@
 import os
-from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
-from pydantic import Field
+
 from utils.secrets import get_secure_secret
 
 load_dotenv()
