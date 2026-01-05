@@ -2,6 +2,7 @@ import logging
 
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import StaticPool
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
