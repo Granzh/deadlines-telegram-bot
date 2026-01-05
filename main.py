@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
 from config import BOT_TOKEN
-from db.session import init_db
+from db.session import Session, init_db
 from handlers.base_handlers import router
 from handlers.delete_deadline import delete_deadline_router
 from handlers.edit_deadline import edit_deadline_router
@@ -13,6 +13,8 @@ from handlers.notifications import notifications_router
 from handlers.start_router import start_router
 from middleware.rate_limit import RateLimitMiddleware
 from scheduler import setup_scheduler
+from services.deadline_service import DeadlineService
+from services.notification_service import NotificationService
 
 assert BOT_TOKEN is not None
 
@@ -46,7 +48,9 @@ async def main():
     await bot.set_my_commands(commands)
 
     await init_db()
-    setup_scheduler()
+    deadline_service = DeadlineService(Session)
+    notification_service = NotificationService(Session)
+    setup_scheduler(bot, deadline_service, notification_service)
 
     await dp.start_polling(bot)
 
