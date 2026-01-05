@@ -1,0 +1,54 @@
+name: Scheduled Tasks
+
+on:
+    schedule:
+        - cron: "0 0 * * *"
+    workflow_dispatch:
+
+jobs:
+    dependency-check:
+        name: Check dependencies for updates
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.13"
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v3
+
+            - name: Check for outdated packages
+              run: |
+                  uv pip list --outdated
+
+            - name: Create issue if updates available
+              uses: peter-evans/create-issue-from-file@v5
+              with:
+                  title: "Scheduled:  Dependency Updates Available"
+                  content-filepath: .github/ISSUE_TEMPLATE/dependency-update.md
+              continue-on-error: true
+
+    security-audit:
+        name: Security audit
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.13"
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v3
+
+            - name: Install dependencies
+              run: uv sync
+
+            - name: Run pip-audit
+              run: |
+                  uv pip install pip-audit
+                  uv run pip-audit
