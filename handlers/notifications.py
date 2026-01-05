@@ -2,6 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import (
     CallbackQuery,
+    InaccessibleMessage,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -138,7 +139,9 @@ async def toggle_notification(callback: CallbackQuery):
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons, parse_mode="Markdown")
 
     try:
-        if callback.message is not None and not isinstance(callback.message, str):
+        if callback.message is not None and not isinstance(
+            callback.message, (str, InaccessibleMessage)
+        ):
             await callback.message.edit_text(text, reply_markup=keyboard)
     except Exception:
         pass

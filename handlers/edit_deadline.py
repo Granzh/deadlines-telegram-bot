@@ -4,6 +4,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
+    InaccessibleMessage,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -82,7 +83,9 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     try:
         if callback.data is None:
             raise Exception("Invalid callback data")
-        if callback.message is not None and not isinstance(callback.message, str):
+        if callback.message is not None and not isinstance(
+            callback.message, (str, InaccessibleMessage)
+        ):
             await callback.message.edit_text(
                 f"Что хочешь изменить в дедлайне?\n\n"
                 f"{deadline.title}\n"
@@ -90,7 +93,9 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
                 reply_markup=keyboard,
             )
     except Exception:
-        if callback.message is not None and not isinstance(callback.message, str):
+        if callback.message is not None and not isinstance(
+            callback.message, (str, InaccessibleMessage)
+        ):
             await callback.message.answer(
                 f"Что хочешь изменить в дедлайне?\n\n"
                 f"{deadline.title}\n"
@@ -110,13 +115,17 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
     if field == "cancel":
         await state.clear()
         try:
-            if callback.message is None:
+            if callback.message is None or isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 raise Exception("Invalid message")
             await callback.message.edit_text(
                 "Редактирование отменено", parse_mode="Markdown"
             )
         except Exception:
-            if callback.message is not None and not isinstance(callback.message, str):
+            if callback.message is not None and not isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 await callback.message.answer(
                     "Редактирование отменено", parse_mode="Markdown"
                 )
@@ -125,24 +134,32 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
 
     if field == "title":
         try:
-            if callback.message is not None and not isinstance(callback.message, str):
+            if callback.message is not None and not isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 await callback.message.edit_text(
                     "Введи новое название дедлайна:", parse_mode="Markdown"
                 )
         except Exception:
-            if callback.message is not None and not isinstance(callback.message, str):
+            if callback.message is not None and not isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 await callback.message.answer(
                     "Введи новое название дедлайна:", parse_mode="Markdown"
                 )
         await state.set_state(EditDeadlineFSM.edit_title)
     elif field == "datetime":
         try:
-            if callback.message is not None and not isinstance(callback.message, str):
+            if callback.message is not None and not isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 await callback.message.edit_text(
                     "Введи новую дату", parse_mode="Markdown"
                 )
         except Exception:
-            if callback.message is not None and not isinstance(callback.message, str):
+            if callback.message is not None and not isinstance(
+                callback.message, (str, InaccessibleMessage)
+            ):
                 await callback.message.answer("Введи новую дату", parse_mode="Markdown")
         await state.set_state(EditDeadlineFSM.edit_datetime)
 
@@ -172,6 +189,10 @@ async def process_new_title(msg: Message, state: FSMContext):
 
 @edit_deadline_router.message(EditDeadlineFSM.edit_datetime)
 async def process_new_datetime(msg: Message, state: FSMContext):
+    if not msg.text:
+        await msg.answer("Сообщение не содержит текста", parse_mode="Markdown")
+        return
+
     dt = dateparser.parse(msg.text, settings={"PREFER_DATES_FROM": "future"})
 
     if not dt:
