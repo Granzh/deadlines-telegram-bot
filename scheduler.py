@@ -1,16 +1,21 @@
+import logging
+
 from aiogram import Bot
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import BOT_TOKEN
+from db.session import Session
 from services.deadline_service import DeadlineService
 from services.notification_service import NotificationService
-from db.session import Session
 
 assert BOT_TOKEN is not None
 
 bot = Bot(token=BOT_TOKEN)
 deadline_service = DeadlineService(Session)
 notification_service = NotificationService(Session)
+
+
+logger = logging.getLogger(__name__)
 
 
 async def check_deadlines():
@@ -43,7 +48,7 @@ async def check_upcoming_deadlines():
             await bot.send_message(deadline.user_id, message)
             await notification_service.mark_as_sent(deadline.id, notif_type)
         except Exception as e:
-            print(f"Error sending notification: {e}")
+            logger.error(f"Error sending notification: {e}")
 
 
 def setup_scheduler():
