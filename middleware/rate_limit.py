@@ -67,7 +67,8 @@ class RateLimitMiddleware(BaseMiddleware):
         """Handle rate limit exceeded event"""
         message = (
             "Too many requests! Please wait a moment before trying again.\n"
-            f"You can send up to {self.max_calls} messages per {self.limit.total_seconds()} seconds."
+            f"""You can send up to {self.max_calls} messages per
+            {self.limit.total_seconds()} seconds."""
         )
 
         if isinstance(event, Message):
