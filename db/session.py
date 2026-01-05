@@ -4,6 +4,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.sql import text
 
 from config import settings
 from exceptions import DatabaseError
@@ -40,7 +41,8 @@ async def init_db():
     """Initialize database with error handling using migrations"""
     try:
         logger.info("Initializing database...")
-        await run_migrations()
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
         logger.info("Database initialized successfully")
     except SQLAlchemyError as e:
         logger.error(f"Failed to initialize database: {e}")

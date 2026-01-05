@@ -9,10 +9,10 @@ from aiogram.types import (
     Message,
 )
 
+from db.session import Session
 from handlers.fsm_edit_deadline import EditDeadlineFSM
 from services.deadline_service import DeadlineService
 from utils.error_handler import handle_errors
-from db.session import Session
 
 edit_deadline_router = Router()
 service = DeadlineService(Session)
@@ -50,6 +50,8 @@ async def edit_deadline_command(msg: Message):
 @edit_deadline_router.callback_query(lambda c: c.data.startswith("edit:"))
 async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     try:
+        if callback.data is None:
+            raise ValueError("Invalid callback data")
         deadline_id = int(callback.data.split(":", 1)[1])
     except ValueError:
         await callback.answer("Invalid deadline ID", show_alert=True)
@@ -78,16 +80,18 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     try:
+        if callback.data is None:
+            raise Exception("Invalid callback data")
         await callback.message.edit_text(
             f"Что хочешь изменить в дедлайне?\n\n"
-            f"*{deadline.title}*\n"
+            f"{deadline.title}\n"
             f"Срок: {deadline.deadline_at}",
             reply_markup=keyboard,
         )
     except Exception:
         await callback.message.answer(
             f"Что хочешь изменить в дедлайне?\n\n"
-            f"*{deadline.title}*\n"
+            f"{deadline.title}\n"
             f"Срок: {deadline.deadline_at}",
             reply_markup=keyboard,
         )
@@ -98,11 +102,14 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
 
 @edit_deadline_router.callback_query(lambda c: c.data.startswith("edit_field:"))
 async def process_field_choice(callback: CallbackQuery, state: FSMContext):
+    assert callback.data is not None
     field = callback.data.split(":", 1)[1]
 
     if field == "cancel":
         await state.clear()
         try:
+            if callback.message is None:
+                raise Exception("Invalid message")
             await callback.message.edit_text("Редактирование отменено")
         except Exception:
             await callback.message.answer("Редактирование отменено")
@@ -117,13 +124,9 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
         await state.set_state(EditDeadlineFSM.edit_title)
     elif field == "datetime":
         try:
-            await callback.message.edit_text(
-                "Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:"
-            )
+            await callback.message.edit_text("Введи новую дату")
         except Exception:
-            await callback.message.answer(
-                "Введи новую дату в формате ДД.ММ.ГГГГ ЧЧ:ММ:"
-            )
+            await callback.message.answer("Введи новую дату")
         await state.set_state(EditDeadlineFSM.edit_datetime)
 
     await callback.answer()

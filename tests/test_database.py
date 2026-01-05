@@ -51,7 +51,7 @@ class TestDatabaseSession:
     async def test_init_db_with_general_error(self):
         """Test database initialization with general error"""
         mock_connection = Mock()
-        mock_connection.execute = AsyncMock()
+        mock_connection.execute = AsyncMock(side_effect=Exception("Database error"))
 
         mock_ctx_manager = Mock()
         mock_ctx_manager.__aenter__ = AsyncMock(return_value=mock_connection)

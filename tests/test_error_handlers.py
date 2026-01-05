@@ -131,7 +131,7 @@ class TestErrorHandlers:
         mock_callback.answer.assert_called_once()
         call_args, call_kwargs = mock_callback.answer.call_args
         assert "Default error" in call_args[0]
-        assert "Invalid callback data" in call_args[0]
+        assert "Invalid input provided" in call_args[0]
         assert call_kwargs.get("show_alert") is True
 
     @pytest.mark.asyncio

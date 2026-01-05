@@ -1,14 +1,12 @@
 from aiogram import Router
 from aiogram.types import CallbackQuery
 
-from services.deadline_service import DeadlineService
-from utils.error_handler import handle_callback_errors
+from db.session import Session
 from exceptions import (
     CallbackDataError,
-    DeadlineNotFoundError,
-    DatabaseError,
 )
-from db.session import Session
+from services.deadline_service import DeadlineService
+from utils.error_handler import handle_callback_errors
 
 delete_deadline_router = Router()
 

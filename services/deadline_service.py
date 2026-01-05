@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db.models import Deadline, User
 from db.session import Session
-from utils.validation import validate_telegram_user
 from exceptions import (
     DatabaseError,
     DeadlineCreationError,
@@ -19,6 +18,7 @@ from exceptions import (
     InvalidTimezoneError,
     ValidationError,
 )
+from utils.validation import validate_telegram_user
 
 logger = logging.getLogger(__name__)
 

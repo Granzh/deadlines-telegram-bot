@@ -1,18 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import os
-from logging.config import fileConfig
-from typing import AsyncGenerator
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import AsyncEngine, async_session_maker
+from sqlalchemy.ext.asyncio import AsyncEngine, async_engine_from_config
 
 from config import settings
 from db.base import Base
-from db.models import Deadline, User
 
 target_metadata = Base.metadata
 
@@ -55,8 +51,26 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 
-def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+async def run_migrations_online() -> None:
+    config = context.config
+
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    def do_run_migrations(connection):
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
+
+    async def run():
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+        await connectable.dispose()
+
+    asyncio.run(run())
 
 
 if context.is_offline_mode():

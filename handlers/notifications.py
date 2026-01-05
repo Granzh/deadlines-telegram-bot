@@ -7,8 +7,8 @@ from aiogram.types import (
     Message,
 )
 
-from services.notification_service import NotificationService
 from db.session import Session
+from services.notification_service import NotificationService
 
 notifications_router = Router()
 service = NotificationService(Session)
@@ -73,6 +73,7 @@ async def notifications_command(msg: Message):
 
 @notifications_router.callback_query(lambda c: c.data.startswith("notif_toggle:"))
 async def toggle_notification(callback: CallbackQuery):
+    assert callback.data is not None
     field = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
 

@@ -2,7 +2,6 @@
 Rate limiting middleware for Telegram bot
 """
 
-import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict
@@ -58,7 +57,7 @@ class RateLimitMiddleware(BaseMiddleware):
 
     def _get_user_id(self, event):
         """Extract user ID from event"""
-        if isinstance(event, Message):
+        if isinstance(event, Message) and event.from_user is not None:
             return event.from_user.id
         elif isinstance(event, CallbackQuery):
             return event.from_user.id
@@ -73,6 +72,6 @@ class RateLimitMiddleware(BaseMiddleware):
 
         if isinstance(event, Message):
             await event.answer(message)
-        elif isinstance(event, CallbackQuery):
+        elif isinstance(event, CallbackQuery) and event.message is not None:
             await event.message.answer(message)
             await event.answer()  # Stop callback loading

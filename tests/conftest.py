@@ -1,4 +1,5 @@
 import asyncio
+import subprocess
 from datetime import datetime, timedelta
 from typing import AsyncGenerator, Generator
 
@@ -13,6 +14,11 @@ from db.session import Session
 
 # Test database URL
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrate():
+    subprocess.run(["alembic", "upgrade", "head"], check=True)
 
 
 @pytest.fixture(scope="session")
