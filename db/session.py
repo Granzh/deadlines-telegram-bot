@@ -9,18 +9,30 @@ from sqlalchemy.sql import text
 from config import settings
 from exceptions import DatabaseError
 
-from .base import Base
-
 logger = logging.getLogger(__name__)
 
-engine = create_async_engine(
-    str(settings.database_url),
-    echo=False,
-    pool_size=20,
-    max_overflow=30,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+# Determine if using SQLite
+is_sqlite = str(settings.database_url).startswith("sqlite")
+
+# Configure engine parameters based on database type
+engine_params = {
+    "echo": False,
+    "pool_size": None,
+}
+
+if is_sqlite:
+    # SQLite-specific configuration
+    engine_params["poolclass"] = StaticPool
+    engine_params["connect_args"] = {"check_same_thread": False}
+    engine_params.pop("pool_size", None)
+else:
+    # Server database configuration (PostgreSQL, MySQL, etc.)
+    engine_params["pool_size"] = 20
+    engine_params["max_overflow"] = 30
+    engine_params["pool_pre_ping"] = True
+    engine_params["pool_recycle"] = 3600
+
+engine = create_async_engine(str(settings.database_url), **engine_params)
 Session = async_sessionmaker(engine, expire_on_commit=False)
 
 
