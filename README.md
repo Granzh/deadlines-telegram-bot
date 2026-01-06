@@ -59,9 +59,9 @@ Telegram bot for deadlines with notifications and timezones support.
    uv run python main.py
    ```
 
-## Команды бота
+## Bot commands
 
-| Команда | Описание |
+| Command | Description |
 | --------- | ---------- |
 | `/start` | Start the bot |
 | `/help` | List all available commands |
