@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 
 from sqlalchemy import text
 
@@ -27,7 +26,7 @@ class HealthChecker:
                 self.session_factory = session_factory
 
             async with self.session_factory() as session:
-                result = await session.execute(text("SELECT 1"))
+                _ = await session.execute(text("SELECT 1"))
                 return {
                     "status": "healthy",
                     "response": "Database connection successful",

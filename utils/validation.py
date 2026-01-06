@@ -5,7 +5,7 @@ Input validation utilities
 import re
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, StrictInt, field_validator
 
 
 class TelegramUserValidation(BaseModel):
@@ -35,7 +35,7 @@ class TelegramUserValidation(BaseModel):
 
     @field_validator("is_bot")
     @classmethod
-    def validate_not_bot(cls, v):
+    def validate_is_bot(cls, v):
         """Ensure user is not a bot"""
         if v:
             raise ValueError("Bots are not allowed")
@@ -81,7 +81,7 @@ class NotificationSettingsValidation(BaseModel):
     """Schema for validating notification settings"""
 
     enabled: bool = True
-    advance_hours: int = 24
+    advance_hours: StrictInt = 24
 
     @field_validator("advance_hours")
     @classmethod
@@ -117,12 +117,8 @@ def sanitize_text(text: str, max_length: int = 1000) -> str:
     """Sanitize text input to prevent injection attacks"""
     if not text:
         return ""
-
-    # Remove potentially dangerous characters
-    text = re.sub(r'[<>"\']', "", text)
-
     # Limit length
     if len(text) > max_length:
-        text = text[:max_length]
+        text = text[: max_length - 3] + "..."
 
     return text.strip()

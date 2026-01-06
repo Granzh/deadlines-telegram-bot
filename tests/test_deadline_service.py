@@ -1,8 +1,9 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import select
 
 from db.models import Deadline, User
 from exceptions import (
@@ -209,7 +210,6 @@ class TestDeadlineService:
         from sqlalchemy import select
 
         from db.models import Deadline
-        
 
         async with db_session() as session:
             result = await session.execute(
@@ -328,7 +328,6 @@ class TestDeadlineService:
         from sqlalchemy import select
 
         from db.models import User
-        
 
         async with db_session() as session:
             result = await session.execute(
@@ -559,3 +558,61 @@ class TestDeadlineService:
         assert is_valid_timezone("Mars/Phobos") is False
         assert is_valid_timezone("") is False
         assert is_valid_timezone("NotATimezone") is False
+
+    @pytest.mark.asyncio
+    async def test_get_due_unnotified_empty(self, session, db_session):
+        """Test getting due unnotified deadlines when none exist"""
+        service = DeadlineService(db_session)
+
+        deadlines = await service.get_due_unnotified()
+        assert deadlines == []
+
+    @pytest.mark.asyncio
+    async def test_get_due_unnotified_with_deadlines(self, session, db_session):
+        """Test getting due unnotified deadlines"""
+        service = DeadlineService(db_session)
+        user = User(telegram_id=1, timezone="UTC")
+        session.add(user)
+        await session.commit()
+
+        # Create a past deadline
+        past_deadline = Deadline(
+            user_id=user.id,
+            title="Past Deadline",
+            deadline_at=datetime.now(timezone.utc) - timedelta(days=1),
+        )
+        session.add(past_deadline)
+        await session.commit()
+
+        deadlines = await service.get_due_unnotified()
+        assert len(deadlines) == 1
+        assert deadlines[0].title == "Past Deadline"
+
+    @pytest.mark.asyncio
+    async def test_mark_overdue_notified(self, session, db_session):
+        """Test marking deadline as overdue notified"""
+        service = DeadlineService(db_session)
+        user = User(telegram_id=1, timezone="UTC")
+        session.add(user)
+        await session.commit()
+
+        deadline = Deadline(
+            user_id=user.id,
+            title="Test Deadline",
+            deadline_at=datetime.now(timezone.utc) + timedelta(days=1),
+        )
+        session.add(deadline)
+        await session.commit()
+
+        # Should not raise exception
+        await service.mark_overdue_notified(deadline.id)
+
+        # Verify notification was added
+        from db.models import SentNotification
+
+        result = await session.execute(
+            select(SentNotification).where(SentNotification.deadline_id == deadline.id)
+        )
+        notification = result.scalar_one_or_none()
+        assert notification is not None
+        assert notification.notification_type == "overdue"
