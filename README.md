@@ -88,6 +88,28 @@ Telegram bot for deadlines with notifications and timezones support.
    docker-compose --profile migrations up migrations
    ```
 
+### Health monitoring
+
+The bot includes HTTP health monitoring for production deployment:
+
+- **HTTP endpoint**: `GET /health` - JSON response for monitoring systems  
+- **Health checks**: Database connectivity, scheduler status, memory usage
+- **Graceful shutdown**: Proper cleanup on termination
+
+Health check example response:
+```json
+{
+  "status": "healthy",
+  "uptime": "2h 15m 30s", 
+  "timestamp": "2026-01-06T12:00:00.000Z",
+  "services": {
+    "database": {"status": "healthy"},
+    "scheduler": {"status": "healthy", "jobs_count": 2},
+    "memory": {"status": "healthy", "rss_mb": 140.5}
+  }
+}
+```
+
 ### Environment variables
 
 - `BOT_TOKEN` - Your Telegram bot token

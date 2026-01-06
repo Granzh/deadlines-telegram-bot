@@ -1,4 +1,6 @@
 import asyncio
+import signal
+import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
@@ -15,6 +17,7 @@ from middleware.rate_limit import RateLimitMiddleware
 from scheduler import setup_scheduler
 from services.deadline_service import DeadlineService
 from services.notification_service import NotificationService
+from utils.health import HealthCheckerManager
 
 assert BOT_TOKEN is not None
 
@@ -48,11 +51,69 @@ async def main():
     await bot.set_my_commands(commands)
 
     await init_db()
+
+    # Initialize health checker
+    HealthCheckerManager.initialize()
+
     deadline_service = DeadlineService(Session)
     notification_service = NotificationService(Session)
     setup_scheduler(bot, deadline_service, notification_service)
 
+    # Graceful shutdown handlers
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, shutting down gracefully...")
+        asyncio.create_task(shutdown(bot))
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # Start health server in background
+    import threading
+
+    def run_health_server():
+        import subprocess
+
+        try:
+            # Run health server in subprocess
+            subprocess.run(["uv", "run", "python", "health_server.py"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Health server failed: {e}")
+        except Exception as e:
+            print(f"Failed to start health server: {e}")
+
+    # Start health server in background thread
+    health_thread = threading.Thread(target=run_health_server, daemon=True)
+    health_thread.start()
+
+    # Give health server time to start
+    await asyncio.sleep(2)
+
+    print("Bot and health server started")
     await dp.start_polling(bot)
+
+
+async def shutdown(bot: Bot):
+    """Graceful shutdown procedure"""
+    print("Starting graceful shutdown...")
+
+    try:
+        # Stop receiving updates
+        await bot.session.close()
+
+        # Stop scheduler
+        from scheduler import get_scheduler_instance
+
+        scheduler = get_scheduler_instance()
+        if scheduler and scheduler.running:
+            scheduler.shutdown()
+            print("Scheduler stopped")
+
+        print("Graceful shutdown completed")
+
+    except Exception as e:
+        print(f"Error during shutdown: {e}")
+    finally:
+        sys.exit(0)
 
 
 if __name__ == "__main__":

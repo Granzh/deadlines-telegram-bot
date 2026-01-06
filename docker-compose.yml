@@ -23,6 +23,15 @@ services:
       - ./data:/app/data
     networks:
       - bot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      redis:
+        condition: service_healthy
 
   migrations:
     build: .
@@ -35,6 +44,11 @@ services:
       - bot-network
     command: ["uv", "run", "alembic", "upgrade", "head"]
     profiles: ["migrations"]
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "from db.session import Session; import asyncio; asyncio.run(Session().execute('SELECT 1'))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   redis:
     image: redis:7-alpine
@@ -46,6 +60,12 @@ services:
       - redis_data:/data
     networks:
       - bot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   bot-network:

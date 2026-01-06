@@ -48,19 +48,28 @@ async def check_upcoming_deadlines(bot: Bot, notification_service: NotificationS
             logger.error(f"Error sending notification: {e}")
 
 
+_scheduler_instance = None
+
+
 def setup_scheduler(
     bot: Bot,
     deadline_service: DeadlineService,
     notification_service: NotificationService,
 ):
-    scheduler = AsyncIOScheduler(timezone="UTC")
-    scheduler.add_job(
+    global _scheduler_instance
+    _scheduler_instance = AsyncIOScheduler(timezone="UTC")
+    _scheduler_instance.add_job(
         check_deadlines, "interval", minutes=1, args=[bot, deadline_service]
     )
-    scheduler.add_job(
+    _scheduler_instance.add_job(
         check_upcoming_deadlines,
         "interval",
         minutes=1,
         args=[bot, notification_service],
     )
-    scheduler.start()
+    _scheduler_instance.start()
+
+
+def get_scheduler_instance():
+    """Get the global scheduler instance"""
+    return _scheduler_instance
