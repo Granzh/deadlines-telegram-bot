@@ -8,18 +8,18 @@ from aiogram.types import (
     Message,
 )
 
-from db.session import Session
 from services.notification_service import NotificationService
 
 notifications_router = Router()
-service = NotificationService(Session)
 
 
 @notifications_router.message(Command("notifications"))
-async def notifications_command(msg: Message):
+async def notifications_command(
+    msg: Message, notification_service: NotificationService
+):
     if msg.from_user is None:
         return
-    settings = await service.get_or_create_settings(msg.from_user.id)
+    settings = await notification_service.get_or_create_settings(msg.from_user.id)
 
     text = "⚙️ *Настройки уведомлений*\n\n"
     text += "Выбери, когда хочешь получать напоминания:\n\n"
@@ -75,17 +75,19 @@ async def notifications_command(msg: Message):
 
 
 @notifications_router.callback_query(lambda c: c.data.startswith("notif_toggle:"))
-async def toggle_notification(callback: CallbackQuery):
+async def toggle_notification(
+    callback: CallbackQuery, notification_service: NotificationService
+):
     assert callback.data is not None
     field = callback.data.split(":", 1)[1]
     user_id = callback.from_user.id
 
-    settings = await service.get_or_create_settings(user_id)
+    settings = await notification_service.get_or_create_settings(user_id)
     current_value = getattr(settings, field)
 
-    await service.update_settings(user_id, **{field: not current_value})
+    await notification_service.update_settings(user_id, **{field: not current_value})
 
-    settings = await service.get_or_create_settings(user_id)
+    settings = await notification_service.get_or_create_settings(user_id)
 
     text = "⚙️ *Настройки уведомлений*\n\n"
     text += "Выбери, когда хочешь получать напоминания:\n\n"

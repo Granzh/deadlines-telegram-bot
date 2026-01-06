@@ -1,7 +1,6 @@
 from aiogram import Router
 from aiogram.types import CallbackQuery
 
-from db.session import Session
 from exceptions import (
     CallbackDataError,
 )
@@ -10,12 +9,10 @@ from utils.error_handler import handle_callback_errors
 
 delete_deadline_router = Router()
 
-service = DeadlineService(Session)
-
 
 @delete_deadline_router.callback_query(lambda c: c.data.startswith("delete:"))
 @handle_callback_errors("Ошибка при удалении дедлайна")
-async def delete_deadline(callback: CallbackQuery):
+async def delete_deadline(callback: CallbackQuery, deadline_service: DeadlineService):
     """Handle deadline deletion"""
     if not callback.data or ":" not in callback.data:
         raise CallbackDataError(callback.data or "empty")
@@ -25,7 +22,7 @@ async def delete_deadline(callback: CallbackQuery):
     except ValueError:
         raise CallbackDataError(f"Invalid deadline ID: {callback.data}")
 
-    await service.delete(deadline_id, callback.from_user.id)
+    await deadline_service.delete(deadline_id, callback.from_user.id)
 
     # Try to edit the message, but don't fail if we can't
     if callback.message and hasattr(callback.message, "edit_text"):

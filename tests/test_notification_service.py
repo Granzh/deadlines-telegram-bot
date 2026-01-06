@@ -198,9 +198,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
 
         # Create a deadline that should trigger notifications
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             # Create deadline due in 1 hour
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
@@ -240,9 +238,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
 
         # Create a deadline that would trigger notification if settings existed
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 hour",
@@ -264,9 +260,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
 
         # Create a deadline and mark notification as sent
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 hour",
@@ -307,9 +301,7 @@ class TestNotificationService:
         )
 
         # Create deadlines at different timeframes
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             deadlines_data = [
                 ("1 week", datetime.now(timezone.utc) + timedelta(days=7, minutes=1)),
                 ("3 days", datetime.now(timezone.utc) + timedelta(days=3, minutes=1)),
@@ -339,9 +331,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
 
         # Mark notification as sent
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             sent_notification = SentNotification(
                 deadline_id=sample_deadline.id, notification_type="1_hour"
             )
@@ -367,9 +357,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
 
         # Mark 1_hour notification as sent
-        from db.session import Session
-
-        async with Session() as session:
+        async with db_session() as session:
             sent_notification = SentNotification(
                 deadline_id=sample_deadline.id, notification_type="1_hour"
             )
@@ -399,9 +387,8 @@ class TestNotificationService:
         from sqlalchemy import select
 
         from db.models import SentNotification
-        from db.session import Session
 
-        async with Session() as session:
+        async with db_session() as session:
             q = select(SentNotification).where(
                 SentNotification.deadline_id == sample_deadline.id,
                 SentNotification.notification_type == "1_hour",
@@ -424,9 +411,8 @@ class TestNotificationService:
         from sqlalchemy import select
 
         from db.models import SentNotification
-        from db.session import Session
 
-        async with Session() as session:
+        async with db_session() as session:
             q = select(SentNotification).where(
                 SentNotification.deadline_id == sample_deadline.id,
                 SentNotification.notification_type == "1_hour",

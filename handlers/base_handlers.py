@@ -6,12 +6,10 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from db.session import Session
 from handlers.fsm_add_deadline import AddDeadlineFSM
 from services.deadline_service import DeadlineService
 
 router = Router()
-service = DeadlineService(Session)
 
 
 @router.message(Command("add"))
@@ -21,10 +19,10 @@ async def add_start(msg: Message, state: FSMContext):
 
 
 @router.message(Command("list"))
-async def list_deadlines(msg: Message):
+async def list_deadlines(msg: Message, deadline_service: DeadlineService):
     assert msg.from_user is not None
-    tz = await service.get_timezone_for_user(msg.from_user.id)
-    deadlines = await service.list_for_user(msg.from_user.id)
+    tz = await deadline_service.get_timezone_for_user(msg.from_user.id)
+    deadlines = await deadline_service.list_for_user(msg.from_user.id)
     tzinfo = ZoneInfo(tz)
 
     if not deadlines:
@@ -44,7 +42,7 @@ async def list_deadlines(msg: Message):
 
 
 @router.message(Command("change_timezone"))
-async def change_timezone_command(msg: Message):
+async def change_timezone_command(msg: Message, deadline_service: DeadlineService):
     assert msg.text is not None
     assert msg.from_user is not None
     parts = msg.text.split()
@@ -52,7 +50,7 @@ async def change_timezone_command(msg: Message):
         await msg.answer("Неверный формат команды!", parse_mode="Markdown")
         return
 
-    success = await service.edit_timezone(msg.from_user.id, parts[1].strip())
+    success = await deadline_service.edit_timezone(msg.from_user.id, parts[1].strip())
     if success:
         await msg.answer("Временная зона успешно изменена!", parse_mode="Markdown")
     else:
@@ -60,11 +58,11 @@ async def change_timezone_command(msg: Message):
 
 
 @router.message(Command("delete"))
-async def delete_deadline_command(msg: Message):
+async def delete_deadline_command(msg: Message, deadline_service: DeadlineService):
     assert msg is not None
     assert msg.from_user is not None
 
-    deadlines = await service.list_for_user(msg.from_user.id)
+    deadlines = await deadline_service.list_for_user(msg.from_user.id)
 
     if not deadlines:
         await msg.answer("Нет дедлайнов для удаления!", parse_mode="Markdown")
@@ -98,7 +96,9 @@ async def add_title(msg: Message, state: FSMContext):
 
 
 @router.message(AddDeadlineFSM.datetime)
-async def add_datetime(msg: Message, state: FSMContext):
+async def add_datetime(
+    msg: Message, state: FSMContext, deadline_service: DeadlineService
+):
     assert msg.text is not None
     assert msg.from_user is not None
 
@@ -113,7 +113,7 @@ async def add_datetime(msg: Message, state: FSMContext):
     dt = dt.replace(tzinfo=timezone.utc)
 
     data = await state.get_data()
-    await service.create(user_id=msg.from_user.id, title=data["title"], dt=dt)
+    await deadline_service.create(user_id=msg.from_user.id, title=data["title"], dt=dt)
 
     await msg.answer(
         f"Дедлайн успешно добавлен! Сработает в {dt}", parse_mode="Markdown"

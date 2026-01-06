@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db.models import Deadline, NotificationSettings, SentNotification
-from db.session import Session
+
 from exceptions import (
     DatabaseError,
     NotificationError,
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class NotificationService:
-    def __init__(self, session_factory: async_sessionmaker = Session):
+    def __init__(self, session_factory: async_sessionmaker):
         self.session_factory = session_factory
 
     async def get_or_create_settings(self, user_id: int) -> NotificationSettings:

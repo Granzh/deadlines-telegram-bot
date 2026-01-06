@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from db.models import Deadline, User
-from db.session import check_db_connection, engine, init_db
+from db.session import check_db_connection, create_engine_and_session, init_db
 from exceptions import DatabaseError
 
 
@@ -14,18 +14,20 @@ class TestDatabaseSession:
     """Test database session configuration and operations"""
 
     @pytest.mark.asyncio
-    async def test_init_db_success(self):
+    async def test_init_sqlite_db_success(self):
         """Test successful database initialization"""
         # Create a temporary engine for testing
-        from sqlalchemy.ext.asyncio import create_async_engine
+        engine, _ = create_engine_and_session("sqlite+aiosqlite:///:memory:")
 
-        test_engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+        assert engine.pool.__class__.__name__ == "StaticPool"
 
-        with patch("db.session.engine", test_engine):
-            # Should not raise any exceptions
-            await init_db()
-
-        await test_engine.dispose()
+    @pytest.mark.asyncio
+    async def test_init_postgres_db_success(self):
+        """Test successful database initialization"""
+        # Create a temporary engine for testing
+        engine, _ = create_engine_and_session(
+            "postgresql+asyncpg://user:password@localhost/dbname"
+        )
 
     @pytest.mark.asyncio
     async def test_init_db_with_sqlalchemy_error(self):
@@ -41,9 +43,8 @@ class TestDatabaseSession:
         mock_engine = Mock()
         mock_engine.begin.return_value = mock_cm
 
-        with patch("db.session.engine", mock_engine):
-            with pytest.raises(DatabaseError):
-                await init_db()
+        with pytest.raises(DatabaseError):
+            await init_db(mock_engine)
 
     @pytest.mark.asyncio
     async def test_init_db_with_general_error(self):
@@ -58,18 +59,16 @@ class TestDatabaseSession:
         mock_engine = Mock()
         mock_engine.begin.return_value = mock_ctx_manager
 
-        with patch("db.session.engine", mock_engine):
-            with pytest.raises(DatabaseError):
-                await init_db()
+        with pytest.raises(DatabaseError):
+            await init_db(mock_engine)
 
     @pytest.mark.asyncio
     async def test_check_init_db_sqlachemy_error_raise(self):
         mock_engine = Mock()
         mock_engine.begin.side_effect = SQLAlchemyError("Mocked SQLAlchemyError")
 
-        with patch("db.session.engine", mock_engine):
-            with pytest.raises(DatabaseError):
-                await init_db()
+        with pytest.raises(DatabaseError):
+            await init_db(mock_engine)
 
     @pytest.mark.asyncio
     async def test_check_db_connection_success(self):
@@ -84,10 +83,9 @@ class TestDatabaseSession:
         mock_engine.begin.return_value = mock_ctx_manager
 
         with (
-            patch("db.session.engine", mock_engine),
             patch("db.session.logger"),
         ):
-            result = await check_db_connection()
+            result = await check_db_connection(mock_engine)
 
         assert result is True
         mock_connection.execute.assert_called_once_with(ANY)
@@ -104,10 +102,9 @@ class TestDatabaseSession:
 
         mock_engine.begin.return_value = mock_ctx_manager
 
-        with patch("db.session.engine", mock_engine):
-            result = await check_db_connection()
+        result = await check_db_connection(mock_engine)
 
-            assert result is False
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_check_db_connection_execute_error(self):
@@ -122,29 +119,9 @@ class TestDatabaseSession:
         mock_engine = Mock()
         mock_engine.begin.return_value = mock_ctx_manager
 
-        with patch("db.session.engine", mock_engine):
-            result = await check_db_connection()
+        result = await check_db_connection(mock_engine)
 
-            assert result is False
-
-    def test_engine_configuration(self):
-        """Test that engine is configured correctly"""
-        # Check that engine exists
-        assert engine is not None
-
-        # Check engine type
-        from sqlalchemy.ext.asyncio import AsyncEngine
-
-        assert isinstance(engine, AsyncEngine)
-
-    def test_session_configuration(self):
-        """Test that session maker is configured correctly"""
-        from sqlalchemy.ext.asyncio import async_sessionmaker
-
-        from db.session import Session
-
-        assert Session is not None
-        assert isinstance(Session, async_sessionmaker)
+        assert result is False
 
     @pytest_asyncio.fixture
     async def test_session_usage(self, test_db_session):
@@ -153,8 +130,6 @@ class TestDatabaseSession:
 
         async with session_maker() as session:
             # Test basic query
-            from sqlalchemy import select
-
             result = await session.execute(text("SELECT 1"))
             assert result is not None
 

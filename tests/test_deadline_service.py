@@ -209,9 +209,9 @@ class TestDeadlineService:
         from sqlalchemy import select
 
         from db.models import Deadline
-        from db.session import Session
+        
 
-        async with Session() as session:
+        async with db_session() as session:
             result = await session.execute(
                 select(Deadline).where(Deadline.id == sample_deadline.id)
             )
@@ -328,9 +328,9 @@ class TestDeadlineService:
         from sqlalchemy import select
 
         from db.models import User
-        from db.session import Session
+        
 
-        async with Session() as session:
+        async with db_session() as session:
             result = await session.execute(
                 select(User).where(User.telegram_id == sample_user.telegram_id)
             )
@@ -360,9 +360,8 @@ class TestDeadlineService:
         from sqlalchemy import select
 
         from db.models import User
-        from db.session import Session
 
-        async with Session() as session:
+        async with db_session() as session:
             result = await session.execute(
                 select(User).where(User.telegram_id == 99999)
             )

@@ -10,21 +10,19 @@ from aiogram.types import (
     Message,
 )
 
-from db.session import Session
 from handlers.fsm_edit_deadline import EditDeadlineFSM
 from services.deadline_service import DeadlineService
 from utils.error_handler import handle_errors
 
 edit_deadline_router = Router()
-service = DeadlineService(Session)
 
 
 @edit_deadline_router.message(Command("edit"))
 @handle_errors("Ошибка при загрузке дедлайнов")
-async def edit_deadline_command(msg: Message):
+async def edit_deadline_command(msg: Message, deadline_service: DeadlineService):
     """Handle edit command - show list of deadlines to edit"""
     assert msg.from_user is not None
-    deadlines = await service.list_for_user(msg.from_user.id)
+    deadlines = await deadline_service.list_for_user(msg.from_user.id)
 
     if not deadlines:
         await msg.answer("У вас нет дедлайнов для редактирования!")
@@ -49,7 +47,9 @@ async def edit_deadline_command(msg: Message):
 
 
 @edit_deadline_router.callback_query(lambda c: c.data.startswith("edit:"))
-async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
+async def choose_edit_field(
+    callback: CallbackQuery, state: FSMContext, deadline_service: DeadlineService
+):
     try:
         if callback.data is None:
             raise ValueError("Invalid callback data")
@@ -58,7 +58,7 @@ async def choose_edit_field(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Invalid deadline ID", show_alert=True)
         return
 
-    deadline = await service.get_by_id(deadline_id, callback.from_user.id)
+    deadline = await deadline_service.get_by_id(deadline_id, callback.from_user.id)
     if not deadline:
         await callback.answer("Deadline not found", show_alert=True)
         return
@@ -167,7 +167,9 @@ async def process_field_choice(callback: CallbackQuery, state: FSMContext):
 
 
 @edit_deadline_router.message(EditDeadlineFSM.edit_title)
-async def process_new_title(msg: Message, state: FSMContext):
+async def process_new_title(
+    msg: Message, state: FSMContext, deadline_service: DeadlineService
+):
     data = await state.get_data()
     deadline_id = data.get("deadline_id")
 
@@ -176,7 +178,7 @@ async def process_new_title(msg: Message, state: FSMContext):
         await state.clear()
         return
 
-    ok = await service.update(deadline_id, title=msg.text)
+    ok = await deadline_service.update(deadline_id, title=msg.text)
     if ok:
         await msg.answer(
             f"Название успешно изменено на: *{msg.text}*", parse_mode="Markdown"
@@ -188,15 +190,16 @@ async def process_new_title(msg: Message, state: FSMContext):
 
 
 @edit_deadline_router.message(EditDeadlineFSM.edit_datetime)
-async def process_new_datetime(msg: Message, state: FSMContext):
-    if not msg.text:
-        await msg.answer("Сообщение не содержит текста", parse_mode="Markdown")
-        return
+async def process_new_datetime(
+    msg: Message, state: FSMContext, deadline_service: DeadlineService
+):
+    assert msg.text is not None
+    assert msg.from_user is not None
 
     dt = dateparser.parse(msg.text, settings={"PREFER_DATES_FROM": "future"})
-
     if not dt:
-        await msg.answer("Не понял дату", parse_mode="Markdown")
+        await msg.answer("Не понял дату(", parse_mode="Markdown")
+        await state.clear()
         return
 
     from datetime import timezone
@@ -211,7 +214,7 @@ async def process_new_datetime(msg: Message, state: FSMContext):
         await state.clear()
         return
 
-    ok = await service.update(deadline_id, dt=dt)
+    ok = await deadline_service.update(deadline_id, dt=dt)
     if ok:
         await msg.answer(f"Дата успешно изменена на: {dt}")
     else:

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from db.models import Deadline, SentNotification, User
-from db.session import Session
+
 from exceptions import (
     DatabaseError,
     DeadlineCreationError,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class DeadlineService:
-    def __init__(self, session_factory: async_sessionmaker = Session):
+    def __init__(self, session_factory: async_sessionmaker):
         self.session_factory = session_factory
 
     async def _get_or_create_user_by_id(self, session, user_id: int) -> User:

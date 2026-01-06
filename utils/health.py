@@ -5,21 +5,27 @@ from typing import Dict, Any
 
 from sqlalchemy import text
 
-from db.session import Session
-
 logger = logging.getLogger(__name__)
 
 
 class HealthChecker:
     """Health check service for monitoring bot status"""
 
-    def __init__(self, session_factory=Session):
+    def __init__(self, session_factory=None):
         self.session_factory = session_factory
         self.startup_time = datetime.now(timezone.utc)
 
     async def check_database(self) -> Dict[str, Any]:
         """Check database connectivity"""
         try:
+            if self.session_factory is None:
+                # Create temporary session for health check
+                from config import settings
+                from db.session import create_engine_and_session
+
+                _, session_factory = create_engine_and_session(settings.database_url)
+                self.session_factory = session_factory
+
             async with self.session_factory() as session:
                 result = await session.execute(text("SELECT 1"))
                 return {
@@ -142,13 +148,11 @@ class HealthCheckerManager:
 
     @classmethod
     def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = HealthChecker()
         return cls._instance
 
     @classmethod
-    def initialize(cls):
-        cls._instance = HealthChecker()
+    def initialize(cls, session_factory=None):
+        cls._instance = HealthChecker(session_factory)
         return cls._instance
 
 
@@ -161,6 +165,12 @@ async def health_check_handler() -> Dict[str, Any]:
     """Main health check endpoint"""
     try:
         checker = get_health_checker()
+        if checker is None:
+            return {
+                "status": "unhealthy",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "error": "Health checker not initialized",
+            }
         return await checker.get_full_status()
     except Exception as e:
         logger.error(f"Health check failed: {e}")

@@ -5,30 +5,49 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
-from config import BOT_TOKEN
-from db.session import Session, init_db
+from config import settings
+from db.session import create_engine_and_session, init_db
 from handlers.base_handlers import router
 from handlers.delete_deadline import delete_deadline_router
 from handlers.edit_deadline import edit_deadline_router
 from handlers.help import help_router
 from handlers.notifications import notifications_router
 from handlers.start_router import start_router
+from middleware.dependency_injection import DependencyInjectionMiddleware
 from middleware.rate_limit import RateLimitMiddleware
 from scheduler import setup_scheduler
 from services.deadline_service import DeadlineService
 from services.notification_service import NotificationService
 from utils.health import HealthCheckerManager
 
-assert BOT_TOKEN is not None
+assert settings.bot_token is not None
 
 
 async def main():
-    bot = Bot(BOT_TOKEN)
+    bot = Bot(settings.bot_token)
     dp = Dispatcher()
+
+    # Create engine and session
+    engine, session_factory = create_engine_and_session(settings.database_url)
+    await init_db(engine)
+
+    # Initialize health checker
+    HealthCheckerManager.initialize(session_factory)
+
+    deadline_service = DeadlineService(session_factory)
+    notification_service = NotificationService(session_factory)
 
     # Add rate limiting middleware
     dp.message.middleware(RateLimitMiddleware(time_limit=10, max_calls=5))
     dp.callback_query.middleware(RateLimitMiddleware(time_limit=10, max_calls=5))
+
+    # Add dependency injection middleware
+    dp.message.middleware(
+        DependencyInjectionMiddleware(deadline_service, notification_service)
+    )
+    dp.callback_query.middleware(
+        DependencyInjectionMiddleware(deadline_service, notification_service)
+    )
 
     commands = [
         BotCommand(command="start", description="Запуск бота"),
@@ -50,13 +69,6 @@ async def main():
 
     await bot.set_my_commands(commands)
 
-    await init_db()
-
-    # Initialize health checker
-    HealthCheckerManager.initialize()
-
-    deadline_service = DeadlineService(Session)
-    notification_service = NotificationService(Session)
     setup_scheduler(bot, deadline_service, notification_service)
 
     # Graceful shutdown handlers

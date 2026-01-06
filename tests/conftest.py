@@ -1,44 +1,25 @@
-import asyncio
-import subprocess
-from datetime import datetime, timedelta, timezone, timezone
-from typing import AsyncGenerator, Generator
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from db.base import Base
 from db.models import Deadline, NotificationSettings, User
-from db.session import Session
 
 # Test database URL
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
-@pytest.fixture(scope="session", autouse=True)
-def migrate():
-    subprocess.run(["alembic", "upgrade", "head"], check=True)
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="session")
 async def engine():
-    """Create a fresh database engine for each test."""
+    """Create test database engine."""
     engine = create_async_engine(
         TEST_DATABASE_URL,
-        echo=False,
         poolclass=StaticPool,
-        connect_args={
-            "check_same_thread": False,
-        },
+        connect_args={"check_same_thread": False},
+        echo=False,
     )
 
     # Create all tables
@@ -48,43 +29,49 @@ async def engine():
     yield engine
 
     # Clean up
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="function")
-async def session(engine) -> AsyncGenerator[AsyncSession, None]:
-    """Create a fresh database session for each test."""
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session() as session:
-        yield session
-
-
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def db_session(engine):
-    """Override the global Session for testing."""
-    global Session
-    original_session = Session
+    """Create session factory for testing."""
+    async with engine.connect() as conn:
+        trans = await conn.begin()
 
-    test_session_maker = async_sessionmaker(engine, expire_on_commit=False)
+        async_session = async_sessionmaker(
+            bind=conn,
+            expire_on_commit=False,
+        )
 
-    # Temporarily replace global Session
-    import db.session
+        yield async_session
 
-    db.session.Session = test_session_maker
+        await trans.rollback()
 
-    yield test_session_maker
 
-    # Restore original Session
-    db.session.Session = original_session
+@pytest_asyncio.fixture
+async def session(engine):
+    """Create a session for each test."""
+    async with engine.connect() as conn:
+        trans = await conn.begin()
+
+        async_session = async_sessionmaker(
+            bind=conn,
+            expire_on_commit=False,
+        )
+
+        async with async_session() as session:
+            yield session
+
+        await trans.rollback()
 
 
 @pytest_asyncio.fixture
 async def sample_user(session):
     """Create a sample user for testing."""
-    user = User(id=1, telegram_id=12345, timezone="UTC")
+    user = User(telegram_id=12345, timezone="UTC")
     session.add(user)
     await session.commit()
     await session.refresh(user)
@@ -105,37 +92,20 @@ async def sample_deadline(session, sample_user):
 
 
 @pytest_asyncio.fixture
-async def sample_notification_settings(session, sample_user):
-    """Create sample notification settings for testing."""
-    settings = NotificationSettings(
-        user_id=sample_user.id,
-        notify_1_week=True,
-        notify_3_days=True,
-        notify_1_day=True,
-        notify_3_hours=True,
-        notify_1_hour=True,
-    )
-    session.add(settings)
-    await session.commit()
-    await session.refresh(settings)
-    return settings
-
-
-@pytest_asyncio.fixture
 async def multiple_deadlines(session, sample_user):
     """Create multiple deadlines for testing."""
-    deadlines = []
-
-    # Create deadlines with different dates
-    dates = [
+    deadlines_data = [
         datetime.now(timezone.utc) + timedelta(days=1),
         datetime.now(timezone.utc) + timedelta(days=3),
         datetime.now(timezone.utc) + timedelta(days=7),
     ]
+    deadlines = []
 
-    for i, date in enumerate(dates):
+    for i, deadline_date in enumerate(deadlines_data):
         deadline = Deadline(
-            user_id=sample_user.id, title=f"Test Deadline {i + 1}", deadline_at=date
+            user_id=sample_user.id,
+            title=f"Test Deadline {i + 1}",
+            deadline_at=deadline_date,
         )
         session.add(deadline)
         deadlines.append(deadline)
@@ -149,8 +119,23 @@ async def multiple_deadlines(session, sample_user):
 
 
 @pytest.fixture
+def valid_deadline_data():
+    """Provide valid deadline data for testing."""
+    return {
+        "title": "Test Deadline",
+        "deadline_at": datetime.now(timezone.utc) + timedelta(days=7),
+    }
+
+
+@pytest.fixture
+def invalid_deadline_data():
+    """Provide invalid deadline data for testing."""
+    return {"title": "", "deadline_at": datetime.now(timezone.utc) - timedelta(days=1)}
+
+
+@pytest.fixture
 def past_deadline_data():
-    """Data for a deadline in the past."""
+    """Provide past deadline data for testing."""
     return {
         "title": "Past Deadline",
         "deadline_at": datetime.now(timezone.utc) - timedelta(days=1),
@@ -159,14 +144,26 @@ def past_deadline_data():
 
 @pytest.fixture
 def future_deadline_data():
-    """Data for a deadline in the future."""
+    """Provide future deadline data for testing."""
     return {
         "title": "Future Deadline",
         "deadline_at": datetime.now(timezone.utc) + timedelta(days=7),
     }
 
 
-@pytest.fixture
-def invalid_deadline_data():
-    """Data for invalid deadline."""
-    return {"title": "", "deadline_at": datetime.now(timezone.utc) - timedelta(days=1)}
+@pytest_asyncio.fixture
+async def sample_notification_settings(session, sample_user):
+    """Create sample notification settings for testing."""
+    settings = NotificationSettings(
+        user_id=sample_user.id,
+        notify_on_due=True,
+        notify_1_hour=True,
+        notify_3_hours=True,
+        notify_1_day=True,
+        notify_3_days=True,
+        notify_1_week=True,
+    )
+    session.add(settings)
+    await session.commit()
+    await session.refresh(settings)
+    return settings
