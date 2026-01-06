@@ -1,13 +1,11 @@
-import asyncio
 from datetime import datetime, timezone
-from typing import Dict, Any
 
 import uvicorn
 from fastapi import FastAPI
 
-from utils.health import get_health_checker
-from db.session import create_engine_and_session
 from config import settings
+from db.session import create_engine_and_session
+from utils.health import get_health_checker
 
 app = FastAPI(title="Deadlines Bot Health API", version="1.0.0")
 
