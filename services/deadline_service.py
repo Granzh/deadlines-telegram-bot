@@ -64,7 +64,7 @@ class DeadlineService:
         """Create a new deadline for user"""
         dt = await self._ensure_aware(dt)
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(timezone.utc)
 
         try:
             # Validate deadline is not in past
@@ -98,7 +98,9 @@ class DeadlineService:
         """Get all deadlines that are due"""
         try:
             async with self.session_factory() as session:
-                q = select(Deadline).where(Deadline.deadline_at <= datetime.now())
+                q = select(Deadline).where(
+                    Deadline.deadline_at <= datetime.now(timezone.utc)
+                )
                 res = await session.execute(q)
                 deadlines = res.scalars().all()
 
@@ -116,7 +118,7 @@ class DeadlineService:
                 # Get deadlines that are due and don't have an overdue notification
                 q = (
                     select(Deadline)
-                    .where(Deadline.deadline_at <= datetime.now())
+                    .where(Deadline.deadline_at <= datetime.now(timezone.utc))
                     .outerjoin(
                         SentNotification,
                         (Deadline.id == SentNotification.deadline_id)

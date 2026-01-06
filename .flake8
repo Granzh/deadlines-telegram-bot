@@ -7,5 +7,6 @@ exclude =
     env,
     .mypy_cache,
     .pytest_cache,
-    tests
+    tests,
+    migrations
 max-line-length = 100

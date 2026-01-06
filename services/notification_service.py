@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -93,7 +93,7 @@ class NotificationService:
         """Get all deadlines that need notifications"""
         try:
             async with self.session_factory() as session:
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
 
                 q = select(Deadline).where(Deadline.deadline_at > now)
                 res = await session.execute(q)
@@ -116,7 +116,12 @@ class NotificationService:
                             )
                             continue
 
-                        time_until = deadline.deadline_at - now
+                        # Ensure both datetimes are timezone-aware
+                        deadline_time = deadline.deadline_at
+                        if deadline_time.tzinfo is None:
+                            deadline_time = deadline_time.replace(tzinfo=timezone.utc)
+
+                        time_until = deadline_time - now
                         notifications_to_send = []
 
                         # Check different notification timeframes

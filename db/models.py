@@ -24,7 +24,7 @@ class Deadline(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer)
     title: Mapped[str] = mapped_column(String)
-    deadline_at: Mapped[datetime] = mapped_column(DateTime)
+    deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

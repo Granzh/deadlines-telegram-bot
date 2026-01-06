@@ -1,6 +1,6 @@
 import asyncio
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, timezone
 from typing import AsyncGenerator, Generator
 
 import pytest
@@ -94,7 +94,7 @@ async def sample_user(session):
 @pytest_asyncio.fixture
 async def sample_deadline(session, sample_user):
     """Create a sample deadline for testing."""
-    future_date = datetime.now() + timedelta(days=7)
+    future_date = datetime.now(timezone.utc) + timedelta(days=7)
     deadline = Deadline(
         user_id=sample_user.id, title="Test Deadline", deadline_at=future_date
     )
@@ -128,9 +128,9 @@ async def multiple_deadlines(session, sample_user):
 
     # Create deadlines with different dates
     dates = [
-        datetime.now() + timedelta(days=1),
-        datetime.now() + timedelta(days=3),
-        datetime.now() + timedelta(days=7),
+        datetime.now(timezone.utc) + timedelta(days=1),
+        datetime.now(timezone.utc) + timedelta(days=3),
+        datetime.now(timezone.utc) + timedelta(days=7),
     ]
 
     for i, date in enumerate(dates):
@@ -151,7 +151,10 @@ async def multiple_deadlines(session, sample_user):
 @pytest.fixture
 def past_deadline_data():
     """Data for a deadline in the past."""
-    return {"title": "Past Deadline", "deadline_at": datetime.now() - timedelta(days=1)}
+    return {
+        "title": "Past Deadline",
+        "deadline_at": datetime.now(timezone.utc) - timedelta(days=1),
+    }
 
 
 @pytest.fixture
@@ -159,11 +162,11 @@ def future_deadline_data():
     """Data for a deadline in the future."""
     return {
         "title": "Future Deadline",
-        "deadline_at": datetime.now() + timedelta(days=7),
+        "deadline_at": datetime.now(timezone.utc) + timedelta(days=7),
     }
 
 
 @pytest.fixture
 def invalid_deadline_data():
     """Data for invalid deadline."""
-    return {"title": "", "deadline_at": datetime.now() - timedelta(days=1)}
+    return {"title": "", "deadline_at": datetime.now(timezone.utc) - timedelta(days=1)}

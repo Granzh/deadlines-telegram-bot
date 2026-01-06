@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -205,7 +205,7 @@ class TestNotificationService:
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 hour",
-                deadline_at=datetime.now() + timedelta(hours=1, minutes=1),
+                deadline_at=datetime.now(timezone.utc) + timedelta(hours=1, minutes=1),
             )
             session.add(deadline_1h)
 
@@ -213,7 +213,7 @@ class TestNotificationService:
             deadline_1d = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 day",
-                deadline_at=datetime.now() + timedelta(days=1, minutes=1),
+                deadline_at=datetime.now(timezone.utc) + timedelta(days=1, minutes=1),
             )
             session.add(deadline_1d)
 
@@ -246,7 +246,7 @@ class TestNotificationService:
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 hour",
-                deadline_at=datetime.now() + timedelta(hours=1, minutes=1),
+                deadline_at=datetime.now(timezone.utc) + timedelta(hours=1, minutes=1),
             )
             session.add(deadline_1h)
             await session.commit()
@@ -270,7 +270,7 @@ class TestNotificationService:
             deadline_1h = Deadline(
                 user_id=sample_deadline.user_id,
                 title="Due in 1 hour",
-                deadline_at=datetime.now() + timedelta(hours=1, minutes=1),
+                deadline_at=datetime.now(timezone.utc) + timedelta(hours=1, minutes=1),
             )
             session.add(deadline_1h)
             await session.commit()
@@ -311,11 +311,11 @@ class TestNotificationService:
 
         async with Session() as session:
             deadlines_data = [
-                ("1 week", datetime.now() + timedelta(days=7, minutes=1)),
-                ("3 days", datetime.now() + timedelta(days=3, minutes=1)),
-                ("1 day", datetime.now() + timedelta(days=1, minutes=1)),
-                ("3 hours", datetime.now() + timedelta(hours=3, minutes=1)),
-                ("1 hour", datetime.now() + timedelta(hours=1, minutes=1)),
+                ("1 week", datetime.now(timezone.utc) + timedelta(days=7, minutes=1)),
+                ("3 days", datetime.now(timezone.utc) + timedelta(days=3, minutes=1)),
+                ("1 day", datetime.now(timezone.utc) + timedelta(days=1, minutes=1)),
+                ("3 hours", datetime.now(timezone.utc) + timedelta(hours=3, minutes=1)),
+                ("1 hour", datetime.now(timezone.utc) + timedelta(hours=1, minutes=1)),
             ]
 
             for title, deadline_at in deadlines_data:
@@ -453,7 +453,7 @@ class TestNotificationService:
         service = NotificationService(db_session)
         caplog.set_level(logging.ERROR)
 
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         deadline = Deadline(
             user_id=sample_user.id,
