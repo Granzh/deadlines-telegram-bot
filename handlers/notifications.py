@@ -71,7 +71,7 @@ async def notifications_command(msg: Message):
     ]
 
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await msg.answer(text, reply_markup=keyboard)
+    await msg.answer(text, reply_markup=keyboard, parse_mode="Markdown")
 
 
 @notifications_router.callback_query(lambda c: c.data.startswith("notif_toggle:"))
