@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from db.models import Deadline, User
+from db.models import Deadline, SentNotification, User
 from db.session import Session
 from exceptions import (
     DatabaseError,
@@ -108,6 +108,48 @@ class DeadlineService:
         except Exception as e:
             logger.error(f"Failed to get due deadlines: {e}")
             raise DatabaseError(f"Failed to get due deadlines: {e}") from e
+
+    async def get_due_unnotified(self) -> list[Deadline]:
+        """Get all deadlines that are due but not yet notified as overdue"""
+        try:
+            async with self.session_factory() as session:
+                # Get deadlines that are due and don't have an overdue notification
+                q = (
+                    select(Deadline)
+                    .where(Deadline.deadline_at <= datetime.now())
+                    .outerjoin(
+                        SentNotification,
+                        (Deadline.id == SentNotification.deadline_id)
+                        & (SentNotification.notification_type == "overdue"),
+                    )
+                    .where(SentNotification.deadline_id.is_(None))
+                )
+                res = await session.execute(q)
+                deadlines = res.scalars().all()
+
+                logger.debug(f"Found {len(deadlines)} due deadlines not yet notified")
+                return list(deadlines)
+
+        except Exception as e:
+            logger.error(f"Failed to get due unnotified deadlines: {e}")
+            raise DatabaseError(f"Failed to get due unnotified deadlines: {e}") from e
+
+    async def mark_overdue_notified(self, deadline_id: int) -> None:
+        """Mark a deadline as notified as overdue"""
+        try:
+            async with self.session_factory() as session:
+                notification = SentNotification(
+                    deadline_id=deadline_id, notification_type="overdue"
+                )
+                session.add(notification)
+                await session.commit()
+                logger.info(f"Marked deadline {deadline_id} as overdue notified")
+
+        except Exception as e:
+            logger.error(
+                f"Failed to mark deadline {deadline_id} as overdue notified: {e}"
+            )
+            raise DatabaseError(f"Failed to mark overdue notification: {e}") from e
 
     async def list_for_user(self, user_id: int) -> list[Deadline]:
         """Get all deadlines for a specific user"""

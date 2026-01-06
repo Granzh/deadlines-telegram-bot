@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 
 async def check_deadlines(bot: Bot, deadline_service: DeadlineService):
     """Проверка просроченных дедлайнов"""
-    deadlines = await deadline_service.get_due()
+    deadlines = await deadline_service.get_due_unnotified()
     for deadline in deadlines:
         await bot.send_message(
             deadline.user_id,
             f"🔥 Дедлайн *{deadline.title}* просрочен!\n\nСрок был: {deadline.deadline_at}",
             parse_mode="Markdown",
         )
+        await deadline_service.mark_overdue_notified(deadline.id)
 
 
 async def check_upcoming_deadlines(bot: Bot, notification_service: NotificationService):
