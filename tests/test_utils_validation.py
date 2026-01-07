@@ -1,6 +1,3 @@
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from utils.validation import (
@@ -231,13 +228,7 @@ class TestValidationFunctions:
 
     def test_sanitize_text_empty(self):
         """Test text sanitization with empty text"""
-        result = sanitize_text(None)
-
-        assert result == ""
-
-    def test_sanitize_text_none(self):
-        """Test text sanitization with None text"""
-        result = sanitize_text(None)
+        result = sanitize_text("")
 
         assert result == ""
 

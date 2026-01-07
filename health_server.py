@@ -23,6 +23,9 @@ async def health_check():
             HealthCheckerManager.initialize(session_factory)
             checker = get_health_checker()
 
+        if checker is None:
+            raise Exception
+
         status = await checker.get_full_status()
 
         # Return appropriate HTTP status based on health

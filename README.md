@@ -38,7 +38,6 @@ Telegram bot for deadlines with notifications and timezones support.
    ```
 
 3. **Bot settings**
-
    Edit the `.env` file: 
 
  ```env
@@ -97,6 +96,7 @@ The bot includes HTTP health monitoring for production deployment:
 - **Graceful shutdown**: Proper cleanup on termination
 
 Health check example response:
+
 ```json
 {
   "status": "healthy",
@@ -134,7 +134,7 @@ uv run pytest tests/test_deadline_service.py
 
 ## Project structure
 
-```
+```markdown
 deadlines-telegram-bot/
 ├── db/                     # Database models and sessions
 ├── handlers/               # Command handlers
@@ -147,4 +147,5 @@ deadlines-telegram-bot/
 ├── Dockerfile             # Docker image
 └── alembic.ini            # Alembic configuration
 ```
+
 **Enjoy using it!**

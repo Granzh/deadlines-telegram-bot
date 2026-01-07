@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -121,15 +120,11 @@ class TestHealthChecker:
     @pytest.mark.asyncio
     async def test_get_uptime(self, health_checker):
         """Test uptime calculation"""
-        with patch("datetime.datetime") as mock_datetime:
-            # Mock current time to be 5 hours after startup
-            health_checker.startup_time = datetime.now(timezone.utc) - timedelta(
-                hours=1
-            )
+        health_checker.startup_time = datetime.now(timezone.utc) - timedelta(hours=1)
 
-            result = await health_checker.get_uptime()
+        result = await health_checker.get_uptime()
 
-            assert result.startswith("1h")
+        assert result.startswith("1h")
 
     @pytest.mark.asyncio
     async def test_get_full_status_healthy(self, health_checker):
