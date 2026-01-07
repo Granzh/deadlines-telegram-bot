@@ -34,20 +34,73 @@ Telegram bot for deadlines with notifications and timezones support.
    ```bash
    uv sync
    
-   cp .env.example .env
+   cp .env.development.example .env.development
+   # or
+   cp .env.production.example .env.production
    ```
 
 3. **Bot settings**
-   Edit the `.env` file: 
+Edit the `.env.development` file for development:  
 
- ```env
-   BOT_TOKEN=your_telegram_bot_token_here
-   DATABASE_URL=sqlite+aiosqlite:///./deadlines.sqlite
-   SCHEDULER_TIMEZONE=UTC
-   LOG_LEVEL=INFO
-  ```
+    ```env
+    # Development configuration
+    BOT_TOKEN=
+    DATABASE_URL=sqlite+aiosqlite:///./deadlines_dev.sqlite
+    SCHEDULER_TIMEZONE=UTC
+    LOG_LEVEL=DEBUG
+    ENVIRONMENT=development
+    DEBUG=true
+
+    # Rate limiting (relaxed for development)
+    RATE_LIMIT_TIME_WINDOW=10
+    RATE_LIMIT_MAX_CALLS=20
+
+    # Notifications (more frequent for testing)
+    NOTIFICATION_CHECK_INTERVAL=1
+    UPCOMING_CHECK_INTERVAL=1
+    DEFAULT_NOTIFICATION_ENABLED=true
+    DEFAULT_NOTIFICATION_ADVANCE_HOURS=24
+    MAX_NOTIFICATION_ADVANCE_HOURS=168
+
+    # Security (higher limits for development)
+    MAX_TITLE_LENGTH=200
+    MAX_DESCRIPTION_LENGTH=1000
+    MAX_DEADLINE_TITLE_LENGTH=200
+    MAX_DEADLINE_DESCRIPTION_LENGTH=1000
+    MAX_DEADLINE_DESCRIPTION_LENGTH=1000
+    ```
+
+    Edit the `.env.production` file for production:
+
+    ```env
+    # Production configuration
+    BOT_TOKEN=
+    DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/deadlines_prod
+    SCHEDULER_TIMEZONE=UTC
+    LOG_LEVEL=WARNING
+    ENVIRONMENT=production
+    DEBUG=false
+
+    # Rate limiting (stricter for production)
+    RATE_LIMIT_TIME_WINDOW=60
+    RATE_LIMIT_MAX_CALLS=10
+
+    # Notifications
+    NOTIFICATION_CHECK_INTERVAL=5
+    UPCOMING_CHECK_INTERVAL=5
+    DEFAULT_NOTIFICATION_ENABLED=true
+    DEFAULT_NOTIFICATION_ADVANCE_HOURS=24
+    MAX_NOTIFICATION_ADVANCE_HOURS=168
+
+    # Security
+    MAX_TITLE_LENGTH=100
+    MAX_DESCRIPTION_LENGTH=500
+    MAX_DEADLINE_TITLE_LENGTH=100
+    MAX_DEADLINE_DESCRIPTION_LENGTH=500
+    ```
 
 4. **Apply database migrations**
+
    ```bash
    uv run alembic upgrade head
    ```
