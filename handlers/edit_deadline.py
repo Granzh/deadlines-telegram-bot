@@ -50,9 +50,11 @@ async def edit_deadline_command(msg: Message, deadline_service: DeadlineService)
 async def choose_edit_field(
     callback: CallbackQuery, state: FSMContext, deadline_service: DeadlineService
 ):
+    if not callback.data or ":" not in callback.data:
+        await callback.answer("Invalid deadline ID", show_alert=True)
+        return
+
     try:
-        if callback.data is None:
-            raise ValueError("Invalid callback data")
         deadline_id = int(callback.data.split(":", 1)[1])
     except ValueError:
         await callback.answer("Invalid deadline ID", show_alert=True)

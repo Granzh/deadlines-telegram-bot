@@ -23,6 +23,7 @@ def run_tests():
         "--cov=services",
         "--cov=utils",
         "--cov=db",
+        "--cov=handlers",
         "--cov=exceptions.py",
         "--cov-report=term-missing",
         "--cov-report=html:htmlcov",
