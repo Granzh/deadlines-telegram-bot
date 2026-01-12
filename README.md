@@ -1,5 +1,7 @@
 # Deadlines Telegram Bot
 
+Проект в стадии тестирования
+
 Telegram bot for deadlines with notifications and timezones support.
 
 ## Features
